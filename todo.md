@@ -1,122 +1,237 @@
-# Overview
-Chronicle is a decentralized application that leverages blockchain technology to create a permanent, immutable, and censorship-resistant public archive. It solves the problem of digital content being ephemeral and controlled by central parties by providing a trustless platform for storing information. It's for individuals wanting to preserve memories, communities wanting to record their history, and creators exploring new forms of media. Its value lies in providing true permanence and user ownership over digital expression.
+Overview  
+GoalifyInvest is a web application designed to demystify investing for students by anchoring it to their real-life aspirations. The core problem students face with investing isn't a lack of ambition, but a disconnect; traditional platforms are abstract, focusing on percentages and market jargon. GoalifyInvest solves this by transforming abstract financial portfolios into tangible, visual goals.
 
-# Core Features
+It's built for post-secondary students who have some disposable income but feel intimidated by investing. Whether it's saving for a grad trip, a down payment on a car, or a new laptop for school, our platform makes the process intuitive, motivating, and directly tied to their life milestones. The value lies in shifting the user's mindset from "I'm investing in a 'balanced' portfolio" to "I'm investing in my trip to Spain."
 
-### 1. Time Capsule Creation
-* **What it does:** Allows a user to write a message, set a future unlock date, and seal it on the blockchain.
-* **Why it's important:** It creates a novel, trustless mechanism for sending information into the future, guaranteed by code rather than a corporation.
-* **How it works at a high level:** The user submits their message and a future timestamp to a smart contract. The contract stores this data and uses a `require` statement to prevent it from being read until `block.timestamp` surpasses the unlock time.
+Core Features  
+1. Goal Creation Wizard
 
-### 2. Story Chain Contribution
-* **What it does:** Allows users to either start a new collaborative narrative or add a new entry to an existing one.
-* **Why it's important:** It enables a new form of "unstoppable media," where a collective story can be built over time without a central author or platform that can alter or delete it.
-* **How it works at a high level:** The user submits their contribution and a `storyId` to the smart contract. The contract appends this new entry to the specified story thread, making it immediately readable.
+What it does: Allows users to define a financial goal with a name (e.g., "Grad Trip"), a target amount, and a target date.
 
-### 3. Public Archive Viewing
-* **What it does:** Provides a public, read-only interface to browse all unlocked time capsules and view the full history of all story chains.
-* **Why it's important:** It makes the collective archive a public good, accessible to anyone without requiring permission.
-* **How it works at a high level:** The frontend reads the array of all entries from the smart contract. For each entry, it attempts to call the `readEntry` function. If the call succeeds, it displays the content. If the call fails due to a time-lock, the UI displays a "Locked" status with the unlock date.
+Why it's important: This is the foundational feature that makes investing personal and relatable. It immediately connects the user's money to a meaningful outcome, increasing motivation and engagement.
 
-# User Experience
+How it works: A user is guided through a simple, multi-step form. They input the goal details. Upon completion, the backend communicates with the RBC InvestEase API to create a dedicated portfolio tailored to this specific goal.
 
-### User Personas
-* **The Futurist (Individual):** Wants to send a message to their future self or create a digital inheritance for their family. They value permanence and security.
-* **The Historian (DAO/Community):** Wants to create a permanent, unalterable record of their group's decisions, history, and lore. They value transparency and censorship resistance.
-* **The Creator (Artist/Writer):** Wants to experiment with new forms of collaborative and persistent storytelling that couldn't exist on traditional platforms.
+2. Smart Portfolio Recommendation
 
-### Key User Flows
-1.  **Creating a Time Capsule:**
-    * User lands on the site and connects their wallet.
-    * Navigates to the "Create Capsule" section.
-    * Fills in a message and selects an unlock date from a calendar.
-    * Clicks "Seal Capsule" and approves the transaction in their wallet.
-2.  **Contributing to a Story:**
-    * User connects their wallet.
-    * Navigates to the "Stories" archive and selects a story to contribute to.
-    * Writes their entry in a text field.
-    * Clicks "Add to Story" and approves the transaction.
+What it does: Automatically suggests an appropriate investment strategy (e.g., conservative, balanced, growth) based on the timeline of the user's goal.
 
-### UI/UX Considerations
-* **Simplicity:** The interface should be minimal and clean, focusing the user on writing and exploring.
-* **Clarity:** Abstract away blockchain jargon. Instead of "gas fees," use "network fee." Clearly show transaction states (Pending, Confirmed, Failed).
-* **Feedback:** Provide immediate visual feedback when a user successfully seals a capsule or adds to a story.
+Why it's important: It removes the biggest point of friction for new investors: choosing the right portfolio. This feature makes an expert-level decision on behalf of the user, building confidence and simplifying the onboarding process.
 
-# Technical Architecture
+How it works: The application uses a simple rules-based engine. For example:
 
-### System Components
-* **Smart Contract (Backend Logic):** A **Solidity** contract deployed on an Ethereum L2 (e.g., **Arbitrum**, **Base**). This is the single source of truth.
-* **Frontend (Client Application):** A web application built with **Next.js** or **Vite** + **React**.
-* **Wallet Integration:** **Wagmi** and **viem** for interacting with the smart contract, and **RainbowKit** for a seamless "Connect Wallet" experience.
-* **Node Provider:** A service like **Alchemy** or **Infura** for reliable read access to the blockchain.
+Goal timeline < 12 months: Recommends very_conservative or conservative.
 
-### Data Models
-* **Onchain `Entry` Struct:** The core data structure stored in the smart contract.
-    ```solidity
-    struct Entry {
-        address creator;
-        string content;
-        uint256 creationTimestamp;
-        uint256 unlockTimestamp; // 0 for story entries
-        uint256 storyId; // 0 for capsules
-    }
-    ```
+Goal timeline 12 - 36 months: Recommends balanced.
 
-### APIs and Integrations
-* The primary "API" is the **ABI** (Application Binary Interface) of the deployed smart contract.
-* The frontend integrates with browser-based Ethereum wallets (e.g., MetaMask, Coinbase Wallet) via the injected provider.
+Goal timeline > 36 months: Recommends growth.
+The selected strategy is then used in the type parameter when creating a portfolio via the API.
 
-### Infrastructure Requirements
-* **L2 Network Access:** For deploying the smart contract.
-* **Web Hosting:** A static web host like **Vercel** or **Netlify** for the frontend application.
+3. Visual Progress Tracker
 
-# Development Roadmap
+What it does: A dashboard that displays each goal with a dynamic visual, such as a progress bar, a photo being "un-pixelated," or a plane moving across a map, representing the completion percentage.
 
-### MVP Requirements (Phase 1: The Time Capsule)
-* **Smart Contract:**
-    * Implement the `Entry` struct.
-    * Create a `createCapsule` payable function.
-    * Create a `readEntry` view function with the time-lock `require` check.
-    * Implement an `EntryCreated` event.
-* **Frontend:**
-    * Set up wallet connection.
-    * A single page with a form to call `createCapsule`.
-    * A simple, chronologically sorted list that displays all entries and their locked/unlocked status.
+Why it's important: It makes tracking progress rewarding and fun. Seeing a visual representation of their goal getting closer is far more motivating for a student than watching a number fluctuate on a chart.
 
-### Future Enhancements (Phase 2 and Beyond)
-* **Phase 2 (Story Chains):**
-    * Update the smart contract with `startStory` and `addToStory` functions.
-    * Build out the frontend UI to browse, read, and contribute to distinct story chains.
-* **Phase 3 (Archive Exploration):**
-    * Add search, filtering (by creator, date), and pagination to the public archive view.
-* **Phase 4 (Scaling & Rich Media):**
-    * Integrate **IPFS** for storing larger content (images, longer texts). The smart contract would only store the IPFS hash, drastically reducing gas costs.
+How it works: The application fetches the current_value of the portfolio associated with the goal from the API. It then calculates the percentage complete relative to the target amount and updates the UI component accordingly.
 
-# Logical Dependency Chain
+4. Projection Power-Up
 
-1.  **Contract Foundation:** Develop and thoroughly test the core `Chronicle.sol` smart contract with only the **time capsule functionality** (`createCapsule`, `readEntry`). Deploy it to a testnet. This is the non-negotiable first step.
-2.  **Frontend Scaffolding:** Initialize the Next.js project and integrate wallet connectivity. Ensure a user can successfully connect and their address is displayed. This provides the container for all future work.
-3.  **Create Flow (Write):** Build the UI form for creating a capsule. Wire up the "Seal Capsule" button to call the `createCapsule` function on the deployed contract. This achieves the "write" part of the DApp.
-4.  **Read Flow (Read):** Build the UI component that reads all entries from the contract. Implement the logic to display the "locked" status correctly. This completes the full, end-to-end MVP loop and creates a usable product.
-5.  **Iteration:** After the MVP is functional, begin work on Phase 2 (Story Chains), which depends on the stable foundation of the MVP.
+What it does: Shows the user a simulated future projection of their goal's growth based on their current investment.
 
-# Risks and Mitigations
+Why it's important: This feature answers the user's key question: "Am I on track?" It gamifies saving by showing them how consistent contributions could help them reach their goal even faster, encouraging positive financial habits.
 
-### Technical Challenges
-* **Risk:** Onchain storage costs could become prohibitive for long messages, even on an L2.
-* **Mitigation:** For the MVP, enforce a strict character limit on messages. Clearly define IPFS integration as the scaling solution in the roadmap.
-* **Risk:** A bug in the smart contract could lead to locked funds or broken logic.
-* **Mitigation:** Write a comprehensive test suite using **Foundry**. Adhere to well-established security patterns (e.g., Checks-Effects-Interactions).
+How it works: The feature leverages the /client/{clientId}/simulate API endpoint. It runs a simulation for a set number of months (e.g., 12) and displays the projectedValue in a clear, easy-to-understand message like, "At this rate, you could reach your goal 2 months early! 🚀".
 
-### Figuring out the MVP that we can build upon
-* **Risk:** Scope creep—trying to build both time capsules and story chains simultaneously, resulting in an incomplete product.
-* **Mitigation:** Be ruthless in defining the MVP. The **only** goal for Phase 1 is a working time capsule feature. All other ideas are deferred to the "Future Enhancements" section. A simple, complete feature is better than two complex, broken ones.
+User Experience  
+User Persona
 
-### Resource Constraints
-* **Risk:** Limited development time (e.g., in a hackathon setting) can prevent building a polished product.
-* **Mitigation:** Aggressively leverage existing tools. Use **RainbowKit** for wallet UI, a component library like **Shadcn/UI** for the frontend, and **Foundry's** built-in testing features to accelerate development. Prioritize function over form for the MVP.
+Name: Alex, the Ambitious Student
 
-# Appendix
+Age: 20
 
-* **Research:** The concept is inspired by the need for permanent digital records in an increasingly centralized web, drawing on the principles of the "Permanent Record" and decentralized archiving projects.
-* **Technical Specifications:** The `content` field will be of type `string memory`. The fee for creation will be a fixed value (e.g., 0.001 ETH) for the MVP.
+Occupation: 3rd-year University Student (Business)
+
+Goals: Wants to save for a backpacking trip across Southeast Asia after graduation (~16 months away). Also wants to buy a reliable used car for internships.
+
+Frustrations: Has a part-time job and some savings but finds traditional investing apps confusing. Doesn't know the difference between a "growth" and "balanced" portfolio and is afraid of making the wrong choice.
+
+Key User Flows
+
+Onboarding & First Goal:
+
+Alex signs up. The app creates a client via the API.
+
+Alex is immediately prompted to "Create your first goal."
+
+He enters "Grad Trip," target $3500, and a date 16 months in the future.
+
+The app recommends a balanced portfolio. Alex agrees.
+
+The app creates the portfolio via the API and prompts him to make his first transfer.
+
+Funding a Goal:
+
+Alex logs in to the dashboard.
+
+He sees his "Grad Trip" goal at 10% completion.
+
+He clicks "Add Funds," enters $150 (from his client cash balance).
+
+The app executes a transfer via the API. The visual progress bar updates.
+
+Checking Progress & Projections:
+
+A week later, Alex logs in to see his progress.
+
+He clicks the "Projection Power-Up" button on his goal card.
+
+A modal appears: "Looking good! If the market performs as projected, your current investment could be worth $550 in 12 months."
+
+UI/UX Considerations
+
+Mobile-First Design: The interface must be clean, responsive, and optimized for a mobile experience.
+
+Minimal Jargon: Avoid financial terms. Instead of "portfolio," use "goal fund." Instead of "risk tolerance," use "timeline."
+
+Visual & Encouraging: Use bright colors, celebratory animations for milestones, and positive reinforcement language.
+
+Technical Architecture  
+System Components
+
+Frontend: A responsive single-page application (SPA) built with React.
+
+Backend: A lightweight server using Node.js (Express). Its primary roles are to securely store the API key, map internal Goal models to API Portfolio IDs, and contain the "Smart Portfolio Recommendation" logic.
+
+Third-Party API: The RBC InvestEase Hackathon API for all client, portfolio, and simulation operations.
+
+Data Models
+
+User (in our backend DB):
+
+id (Primary Key)
+
+clientId (Foreign Key from RBC API)
+
+name
+
+email
+
+Goal (in our backend DB):
+
+id (Primary Key)
+
+userId (links to User)
+
+portfolioId (Foreign Key from RBC API)
+
+name (e.g., "Grad Trip")
+
+targetAmount
+
+targetDate
+
+visualTheme (e.g., 'travel', 'vehicle')
+
+APIs and Integrations
+
+POST /teams/register: To get the team's JWT.
+
+POST /clients: For user signup.
+
+POST /clients/{clientId}/portfolios: To create a new portfolio for a goal.
+
+POST /portfolios/{portfolioId}/transfer: To add money to a goal.
+
+GET /portfolios/{portfolioId}: To fetch current_value for the visual tracker.
+
+POST /client/{clientId}/simulate: For the "Projection Power-Up" feature.
+
+Infrastructure Requirements
+
+Frontend Hosting: Vercel or Netlify.
+
+Backend Hosting: Heroku or Render.
+
+Database: A simple PostgreSQL or MongoDB instance for storing the User/Goal mapping.
+
+Development Roadmap  
+Phase 1: Minimum Viable Product (MVP)
+
+The goal is to get a single, core user flow working end-to-end.
+
+User Authentication: User can sign up, creating a client with the API.
+
+Basic Goal Creation: A form to create one goal. The user must manually select a portfolio type for now (removes recommendation logic from MVP scope).
+
+Basic Funding: Ability to transfer funds from client cash to the goal's portfolio.
+
+Simple Progress Display: A dashboard that shows the goal name, target amount, and current value as plain text.
+
+Phase 2: Core Feature Enhancements
+
+Implement Smart Portfolio Recommendation: Add the timeline-based logic to automate portfolio selection during goal creation.
+
+Implement Visual Progress Tracker: Replace the plain text display with dynamic, visual progress bars/graphics.
+
+Implement Projection Power-Up: Build the UI to call the simulate endpoint and display the projected value in a user-friendly way.
+
+Phase 3: Future Enhancements (Post-Hackathon)
+
+Multiple Goals: Allow users to create and manage multiple goals simultaneously.
+
+Goal Templates: Pre-filled templates for common student goals ("First Car," "Textbooks," "Spring Break").
+
+Push Notifications: Reminders and milestone celebrations to keep users engaged.
+
+Contribution Scheduling: Set up recurring transfers to a goal.
+
+Logical Dependency Chain
+API Authentication (Foundation): First, build the backend service that can successfully register the team and get a JWT. This token is required for all subsequent steps.
+
+User Creation (Client Endpoint): Build the frontend signup form and backend logic to hit the POST /clients endpoint. This establishes the user context.
+
+Core Goal-to-Portfolio Link (Visible Frontend):
+
+Build the "Create Goal" UI.
+
+Upon submission, have the backend call POST /clients/{clientId}/portfolios.
+
+Crucially, save the returned portfolioId in our database and link it to our internal Goal record.
+
+This creates the first end-to-end, visible feature.
+
+Displaying Data:
+
+Build the basic dashboard UI.
+
+Fetch the portfolioId from our database for the user's goal.
+
+Use that ID to call GET /portfolios/{portfolioId} and display the current_value. This makes the app dynamic.
+
+Adding Interactivity:
+
+Build the "Add Funds" feature, which calls POST /portfolios/{portfolioId}/transfer.
+
+Build the "Projection Power-Up" feature, which calls POST /client/{clientId}/simulate.
+
+UI Polish: With all core API logic working, focus on transforming the basic text displays into the rich, visual trackers.
+
+Risks and Mitigations  
+Risk: The logic mapping one "Goal" to one "Portfolio" could be complex.
+
+Mitigation: Keep our backend data models simple. The database's only job is to be a "lookup table" connecting a goalId to a portfolioId. All financial logic is handled by the RBC API.
+
+Risk: Scope creep; trying to build all the visual elements before the core functionality is solid.
+
+Mitigation: Adhere strictly to the Logical Dependency Chain. Get API calls working with console.log and basic HTML elements first. Build the "pretty" UI components only after the data is flowing correctly.
+
+Risk: Time constraints of a hackathon.
+
+Mitigation: Focus entirely on the MVP scope for Phase 1. The "Smart Recommendation" and "Projection Power-Up" are fantastic stretch goals, but the core value is in creating a goal and funding it. Nail that flow first.
+
+Appendix  
+Research Findings: N/A for this PRD, but would typically include survey data on student saving habits.
+
+Technical Specifications: The RBC InvestEase API documentation is the primary technical specification. We assume all endpoints will function as described. We also assume that new clients created via the API will start with a non-zero cash balance for testing purposes.
+
