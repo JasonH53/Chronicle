@@ -1,0 +1,26 @@
+{
+  "name": "chronicle-financial-processor",
+  "version": "1.0.0",
+  "description": "Chronicle - Financial document processing and AI analysis platform",
+  "scripts": {
+    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
+    "backend:dev": "cd backend && source venv/bin/activate && python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "frontend:dev": "cd frontend && npm run dev",
+    "backend:install": "cd backend && source venv/bin/activate && pip install -r requirements.txt",
+    "frontend:install": "cd frontend && npm install",
+    "install:all": "npm run backend:install && npm run frontend:install",
+    "test": "npm run backend:test && npm run frontend:test",
+    "backend:test": "cd backend && source venv/bin/activate && python -m pytest",
+    "frontend:test": "cd frontend && npm run test",
+    "build": "npm run frontend:build",
+    "frontend:build": "cd frontend && npm run build",
+    "start": "npm run dev",
+    "setup": "npm run install:all && echo 'Setup complete! Run npm start to begin development.'"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": ["financial", "document-processing", "ocr", "react", "fastapi"],
+  "author": "Chronicle Team",
+  "license": "MIT"
+}

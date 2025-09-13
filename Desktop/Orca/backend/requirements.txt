@@ -1,0 +1,32 @@
+# Chronicle Financial Document Processor - Backend Dependencies
+# Simple pip-based installation
+
+# Core Framework
+fastapi
+uvicorn
+
+# Database & ORM
+sqlmodel
+alembic
+
+# Authentication & Security (for future use)
+python-jose
+passlib
+
+# File Processing & OCR
+python-multipart
+pytesseract
+Pillow
+
+# Data Validation & Settings
+pydantic
+pydantic-settings
+python-dotenv
+
+# AI/LLM Integration
+google-generativeai
+google-genai
+
+# Development Dependencies
+pytest
+pytest-asyncio
