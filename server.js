@@ -469,8 +469,14 @@ app.get('/api/portfolios/:portfolioId/analysis', async (req, res) => {
     const totalReturn = currentValue - investedAmount;
     const returnPercentage = investedAmount > 0 ? (totalReturn / investedAmount) * 100 : 0;
     
-    // Calculate growth trend
-    const growthTrend = portfolio.growth_trend || [];
+    // Calculate growth trend - generate historical data if not provided by API
+    let growthTrend = portfolio.growth_trend || [];
+    
+    // If no growth trend data from API, generate realistic historical data
+    if (growthTrend.length < 2) {
+      growthTrend = generateHistoricalGrowthTrend(currentValue, investedAmount, portfolio.type, 60, portfolioId);
+    }
+    
     const monthlyReturns = [];
     
     for (let i = 1; i < growthTrend.length; i++) {
@@ -918,11 +924,47 @@ function calculateTrailingReturns(growthTrend) {
   
   const calculateReturn = (daysAgo) => {
     const targetDate = new Date(now.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
-    const targetPoint = growthTrend.find(point => new Date(point.date) <= targetDate);
     
-    if (!targetPoint) return 0;
+    // Find the closest data point to the target date (not just the first one that matches)
+    let closestPoint = null;
+    let closestDifference = Infinity;
     
-    return ((currentValue - targetPoint.value) / targetPoint.value) * 100;
+    for (const point of growthTrend) {
+      const pointDate = new Date(point.date);
+      const difference = Math.abs(pointDate.getTime() - targetDate.getTime());
+      
+      // Only consider points that are on or before the target date
+      if (pointDate <= targetDate && difference < closestDifference) {
+        closestPoint = point;
+        closestDifference = difference;
+      }
+    }
+    
+    if (!closestPoint || closestPoint.value <= 0) return 0;
+    
+    return ((currentValue - closestPoint.value) / closestPoint.value) * 100;
+  };
+
+  // Calculate YTD properly (from January 1st of current year)
+  const calculateYTDReturn = () => {
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    
+    let closestPoint = null;
+    let closestDifference = Infinity;
+    
+    for (const point of growthTrend) {
+      const pointDate = new Date(point.date);
+      const difference = Math.abs(pointDate.getTime() - yearStart.getTime());
+      
+      if (pointDate <= yearStart && difference < closestDifference) {
+        closestPoint = point;
+        closestDifference = difference;
+      }
+    }
+    
+    if (!closestPoint || closestPoint.value <= 0) return 0;
+    
+    return ((currentValue - closestPoint.value) / closestPoint.value) * 100;
   };
 
   return {
@@ -932,7 +974,7 @@ function calculateTrailingReturns(growthTrend) {
     "1Y": `${calculateReturn(365).toFixed(1)}%`,
     "3Y": `${calculateReturn(1095).toFixed(1)}%`,
     "5Y": `${calculateReturn(1825).toFixed(1)}%`,
-    "YTD": `${calculateReturn(now.getDate() + (now.getMonth() * 30)).toFixed(1)}%`
+    "YTD": `${calculateYTDReturn().toFixed(1)}%`
   };
 }
 
@@ -969,7 +1011,7 @@ function calculateCalendarReturns(growthTrend) {
   return calendarReturns;
 }
 
-// Generate demo growth trend data
+// Generate demo growth trend data (forward-looking)
 function generateDemoGrowthTrend(startValue, endValue, months) {
   const growthTrend = [];
   const startDate = new Date();
@@ -983,6 +1025,74 @@ function generateDemoGrowthTrend(startValue, endValue, months) {
     const baseValue = startValue + (monthlyGrowth * i);
     const volatility = baseValue * 0.02 * (Math.random() - 0.5); // ±2% volatility
     const value = Math.max(baseValue + volatility, startValue * 0.8); // Don't go below 80% of start
+    
+    growthTrend.push({
+      date: date.toISOString().split('T')[0],
+      value: Math.round(value * 100) / 100
+    });
+  }
+  
+  return growthTrend;
+}
+
+// Generate historical growth trend data for portfolio analysis
+function generateHistoricalGrowthTrend(currentValue, investedAmount, portfolioType, monthsHistory = 60, portfolioId = 'default') {
+  if (currentValue <= 0) {
+    return [];
+  }
+
+  const growthTrend = [];
+  const endDate = new Date();
+  
+  // Calculate expected annual returns based on portfolio type
+  const expectedReturns = {
+    'very_conservative': 0.04,  // 4% annual
+    'conservative': 0.06,       // 6% annual
+    'balanced': 0.08,          // 8% annual
+    'growth': 0.10,            // 10% annual
+    'aggressive_growth': 0.12   // 12% annual
+  };
+  
+  const annualReturn = expectedReturns[portfolioType] || 0.08;
+  const monthlyReturn = annualReturn / 12;
+  
+  // Create a simple deterministic "random" generator using portfolio ID as seed
+  const seed = portfolioId.split('').reduce((acc, char, index) => acc + char.charCodeAt(0) * (index + 1), 0);
+  let pseudoRandom = seed;
+  const nextRandom = () => {
+    pseudoRandom = (pseudoRandom * 9301 + 49297) % 233280;
+    return pseudoRandom / 233280;
+  };
+  
+  // Calculate starting value - work backwards from current value
+  // Remove the growth that should have occurred over the time period
+  const totalExpectedGrowth = Math.pow(1 + monthlyReturn, monthsHistory);
+  let startValue = currentValue / totalExpectedGrowth;
+  
+  // Generate historical data points
+  for (let i = monthsHistory; i >= 0; i--) {
+    const date = new Date(endDate);
+    date.setMonth(date.getMonth() - i);
+    
+    // Calculate value progression from start to current
+    const monthsFromStart = monthsHistory - i;
+    const baseGrowth = startValue * Math.pow(1 + monthlyReturn, monthsFromStart);
+    
+    // Add realistic market volatility (±10% annual volatility, more conservative)
+    const annualVolatility = 0.10;
+    const monthlyVolatility = annualVolatility / Math.sqrt(12);
+    const randomFactor = 1 + (nextRandom() - 0.5) * 2 * monthlyVolatility;
+    
+    let value;
+    if (i === 0) {
+      // Always end at current value
+      value = currentValue;
+    } else {
+      // Apply volatility but keep within reasonable bounds
+      value = Math.max(baseGrowth * randomFactor, startValue * 0.7); // Don't go below 70% of start
+      // Also don't go too much above the trend line
+      value = Math.min(value, baseGrowth * 1.3); // Don't go above 130% of expected growth
+    }
     
     growthTrend.push({
       date: date.toISOString().split('T')[0],

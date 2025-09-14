@@ -518,6 +518,14 @@ export default function DashboardPage() {
           if (storedGoals) {
             setGoals(JSON.parse(storedGoals))
           }
+          
+          // Refresh user balance after transfer
+          const storedUser = localStorage.getItem("goalifyUser")
+          if (storedUser) {
+            const user = JSON.parse(storedUser)
+            setCurrentBalance(parseFloat(user.startingBalance) || 0)
+            setUserData(user)
+          }
         }}
       />
 

@@ -85,7 +85,10 @@ export default function FundingModal({
 
       if (response.ok) {
         const data = await response.json()
-        toast.success(`Successfully transferred $${amount} to ${portfolios.find(p => p.id === selectedPortfolio)?.name}`)
+        const transferAmount = parseFloat(amount)
+        const portfolioName = portfolios.find(p => p.id === selectedPortfolio)?.name
+        
+        toast.success(`Successfully transferred $${amount} to ${portfolioName}`)
         
         // Update the portfolio's currentAmount in localStorage
         const storedGoals = localStorage.getItem("goalifyGoals")
@@ -95,12 +98,21 @@ export default function FundingModal({
             if (goal.portfolioId === selectedPortfolio || goal.id === selectedPortfolio) {
               return {
                 ...goal,
-                currentAmount: goal.currentAmount + parseFloat(amount)
+                currentAmount: goal.currentAmount + transferAmount
               }
             }
             return goal
           })
           localStorage.setItem("goalifyGoals", JSON.stringify(updatedGoals))
+        }
+        
+        // Update user's cash balance in localStorage
+        const storedUser = localStorage.getItem("goalifyUser")
+        if (storedUser) {
+          const user = JSON.parse(storedUser)
+          const newBalance = (parseFloat(user.startingBalance) || 0) - transferAmount
+          user.startingBalance = newBalance.toString()
+          localStorage.setItem("goalifyUser", JSON.stringify(user))
         }
         
         // Reset form
@@ -114,6 +126,9 @@ export default function FundingModal({
         if (onTransferComplete) {
           onTransferComplete()
         }
+        
+        // Close the modal after successful transfer
+        onClose()
       } else {
         const errorData = await response.json()
         toast.error(errorData.error || 'Transfer failed')
