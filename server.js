@@ -2427,11 +2427,11 @@ ${userData ? `
   - Client ID: ${userData.clientId || 'Not available'}
   - Currency: \`${userData.currency || 'CAD'}\`
   - Locale: \`${userData.locale || 'en-CA'}\`` : '  - No user data available'}
-- **Portfolio**
+- **Portfolio(can be interchangable with Goals)**
 ${portfolioContext || '  - No portfolio data available'}
 - **Files**
 ${fileContext || '  - No files uploaded'}
-- **Goals**
+- **Goals(can be interchangable with Portfolio)**
 ${(Array.isArray(goals) && goals.length) ? '  - Provided goals context available' : '  - No goals set'}
 - **Request**
   - Type: \`${requestAnalysis?.type || 'unknown'}\`
@@ -2486,6 +2486,7 @@ Professional, friendly, student-aware, **plain-English**.
 
 ## Brevity Rules (Important)
 - Default to **<= 200–230 words**.  
+- Goals and portfolios are interchangable.
 - Omit sections that don’t add value to the current question.  
 - Ask **at most one** clarifying question **only if blocking**.
 

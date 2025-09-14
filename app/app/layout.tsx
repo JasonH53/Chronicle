@@ -15,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="font-minecraft">
+      <body className="font-minecraft" suppressHydrationWarning={true}>
         {children}
         <Analytics />
       </body>
