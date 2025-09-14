@@ -86,8 +86,8 @@ export default function LandingPage() {
 
             <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Smartphone className="h-8 w-8 text-secondary" />
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Smartphone className="h-8 w-8 text-primary" />
                 </div>
                 <CardTitle className="text-xl">New MacBook</CardTitle>
                 <CardDescription>6 months • $2,200 goal</CardDescription>
@@ -99,7 +99,7 @@ export default function LandingPage() {
                     <span className="font-medium">$1,650 / $2,200</span>
                   </div>
                   <div className="w-full bg-background rounded-full h-2">
-                    <div className="bg-secondary h-2 rounded-full" style={{ width: "75%" }}></div>
+                    <div className="bg-primary h-2 rounded-full" style={{ width: "75%" }}></div>
                   </div>
                 </div>
               </CardContent>
@@ -107,8 +107,8 @@ export default function LandingPage() {
 
             <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Car className="h-8 w-8 text-accent" />
+                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Car className="h-8 w-8 text-primary" />
                 </div>
                 <CardTitle className="text-xl">First Car</CardTitle>
                 <CardDescription>12 months • $8,000 goal</CardDescription>
@@ -120,7 +120,7 @@ export default function LandingPage() {
                     <span className="font-medium">$3,200 / $8,000</span>
                   </div>
                   <div className="w-full bg-background rounded-full h-2">
-                    <div className="bg-accent h-2 rounded-full" style={{ width: "40%" }}></div>
+                    <div className="bg-primary h-2 rounded-full" style={{ width: "40%" }}></div>
                   </div>
                 </div>
               </CardContent>
@@ -150,8 +150,8 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-secondary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <GraduationCap className="h-8 w-8 text-secondary" />
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <GraduationCap className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-4">Student-Friendly</h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -160,8 +160,8 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <TrendingUp className="h-8 w-8 text-accent" />
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <TrendingUp className="h-8 w-8 text-primary" />
               </div>
               <h3 className="text-xl font-semibold mb-4">Smart Growth</h3>
               <p className="text-muted-foreground leading-relaxed">
@@ -189,14 +189,14 @@ export default function LandingPage() {
               <p className="text-muted-foreground">Tell us what you're saving for and when you need it</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-secondary text-secondary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+              <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                 2
               </div>
               <h3 className="text-lg font-semibold mb-2">Choose Your Strategy</h3>
               <p className="text-muted-foreground">Pick a portfolio that matches your timeline and risk comfort</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-accent text-accent-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+              <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                 3
               </div>
               <h3 className="text-lg font-semibold mb-2">Watch It Grow</h3>

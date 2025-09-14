@@ -37,18 +37,16 @@ export function TransactionHistory({ isOpen, onClose, clientId, portfolios }: Tr
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [summary, setSummary] = useState<TransactionSummary | null>(null)
   const [loading, setLoading] = useState(false)
-  const [selectedPortfolio, setSelectedPortfolio] = useState<string>('all')
+  const [selectedPortfolio, setSelectedPortfolio] = useState<string>('')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
 
   const loadTransactions = async () => {
-    if (!clientId) return
+    if (!clientId || !selectedPortfolio) return
 
     setLoading(true)
     try {
-      const url = selectedPortfolio === 'all' 
-        ? `http://localhost:3001/api/clients/${clientId}/transactions`
-        : `http://localhost:3001/api/portfolios/${selectedPortfolio}/transactions`
+      const url = `http://localhost:3001/api/portfolios/${selectedPortfolio}/transactions`
 
       const response = await fetch(url)
       
@@ -67,7 +65,16 @@ export function TransactionHistory({ isOpen, onClose, clientId, portfolios }: Tr
   }
 
   useEffect(() => {
-    if (isOpen && clientId) {
+    if (isOpen && clientId && portfolios.length > 0) {
+      // Auto-select first portfolio if none selected
+      if (!selectedPortfolio) {
+        setSelectedPortfolio(portfolios[0].id)
+      }
+    }
+  }, [isOpen, clientId, portfolios])
+
+  useEffect(() => {
+    if (isOpen && clientId && selectedPortfolio) {
       loadTransactions()
     }
   }, [isOpen, clientId, selectedPortfolio])
@@ -135,7 +142,6 @@ export function TransactionHistory({ isOpen, onClose, clientId, portfolios }: Tr
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Portfolios</SelectItem>
                   {portfolios.map(portfolio => (
                     <SelectItem key={portfolio.id} value={portfolio.id}>
                       {portfolio.name}
@@ -264,10 +270,7 @@ export function TransactionHistory({ isOpen, onClose, clientId, portfolios }: Tr
                   <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">No Transactions Found</h3>
                   <p className="text-muted-foreground">
-                    {selectedPortfolio === 'all' 
-                      ? 'No transactions found across all portfolios.'
-                      : 'No transactions found for this portfolio.'
-                    }
+                    No transactions found for this portfolio.
                   </p>
                 </CardContent>
               </Card>

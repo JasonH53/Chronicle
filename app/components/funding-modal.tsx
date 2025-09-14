@@ -87,6 +87,22 @@ export default function FundingModal({
         const data = await response.json()
         toast.success(`Successfully transferred $${amount} to ${portfolios.find(p => p.id === selectedPortfolio)?.name}`)
         
+        // Update the portfolio's currentAmount in localStorage
+        const storedGoals = localStorage.getItem("goalifyGoals")
+        if (storedGoals) {
+          const goals = JSON.parse(storedGoals)
+          const updatedGoals = goals.map((goal: any) => {
+            if (goal.portfolioId === selectedPortfolio || goal.id === selectedPortfolio) {
+              return {
+                ...goal,
+                currentAmount: goal.currentAmount + parseFloat(amount)
+              }
+            }
+            return goal
+          })
+          localStorage.setItem("goalifyGoals", JSON.stringify(updatedGoals))
+        }
+        
         // Reset form
         setAmount('')
         setSelectedPortfolio('')
