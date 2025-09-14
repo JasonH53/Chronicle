@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Target, Plus, TrendingUp, Calendar, DollarSign, Plane, Smartphone, Car, GraduationCap } from "lucide-react"
+import { Target, Plus, TrendingUp, Calendar, DollarSign, Plane, Smartphone, Car, GraduationCap, BarChart3, History } from "lucide-react"
 import { CreateGoalModal } from "@/components/create-goal-modal"
+import { SimulationModal } from "@/components/simulation-modal"
+import { TransactionHistory } from "@/components/transaction-history"
+import FundingModal from "@/components/funding-modal"
 
 interface Goal {
   id: string
@@ -31,7 +34,12 @@ export default function DashboardPage() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [goals, setGoals] = useState<Goal[]>([])
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false)
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
+  const [isFundingModalOpen, setIsFundingModalOpen] = useState(false)
   const [currentBalance, setCurrentBalance] = useState(0)
+  const [showAddBalance, setShowAddBalance] = useState(false)
+  const [addBalanceAmount, setAddBalanceAmount] = useState('')
 
   useEffect(() => {
     // Load user data from localStorage
@@ -53,6 +61,45 @@ export default function DashboardPage() {
   const clearDemoData = () => {
     localStorage.removeItem("goalifyGoals")
     setGoals([])
+  }
+
+  const addBalance = async () => {
+    if (!addBalanceAmount || parseFloat(addBalanceAmount) <= 0) {
+      alert('Please enter a valid amount')
+      return
+    }
+
+    if (!userData?.clientId) {
+      alert('Client ID not found')
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/clients/${userData.clientId}/deposit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: parseFloat(addBalanceAmount)
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert(`Successfully deposited $${addBalanceAmount} to your account!`)
+        setAddBalanceAmount('')
+        setShowAddBalance(false)
+        // Refresh balance display with actual updated balance
+        setCurrentBalance(data.result.client.cash)
+      } else {
+        const errorData = await response.json()
+        alert(`Error: ${errorData.error}`)
+      }
+    } catch (error) {
+      console.error('Add balance error:', error)
+      alert('Failed to add balance. Please try again.')
+    }
   }
 
   const handleCreateGoal = async (goalData: Omit<Goal, "id" | "currentAmount">) => {
@@ -171,16 +218,59 @@ export default function DashboardPage() {
               <p className="text-sm text-muted-foreground">Available Balance</p>
               <p className="text-lg font-semibold text-foreground">${currentBalance.toLocaleString()}</p>
             </div>
-            {goals.length > 0 && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={clearDemoData}
-                className="text-xs"
-              >
-                Clear Demo Data
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {!showAddBalance ? (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowAddBalance(true)}
+                  className="text-xs"
+                >
+                  Deposit Money
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    placeholder="Deposit Amount"
+                    value={addBalanceAmount}
+                    onChange={(e) => setAddBalanceAmount(e.target.value)}
+                    className="w-24 px-2 py-1 text-xs border rounded"
+                    min="0.01"
+                    step="0.01"
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={addBalance}
+                    className="text-xs"
+                    disabled={!addBalanceAmount || parseFloat(addBalanceAmount) <= 0}
+                  >
+                    Add
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setShowAddBalance(false)
+                      setAddBalanceAmount('')
+                    }}
+                    className="text-xs"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
+              {goals.length > 0 && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={clearDemoData}
+                  className="text-xs"
+                >
+                  Clear Demo Data
+                </Button>
+              )}
+            </div>
             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
               <span className="text-primary font-semibold">{userData.name.charAt(0).toUpperCase()}</span>
             </div>
@@ -238,10 +328,36 @@ export default function DashboardPage() {
         {/* Goals Section */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">Your Investment Goals</h2>
-          <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create New Goal
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsSimulationModalOpen(true)} 
+              className="gap-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Simulate
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsTransactionModalOpen(true)} 
+              className="gap-2"
+            >
+              <History className="h-4 w-4" />
+              Transactions
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setIsFundingModalOpen(true)} 
+              className="gap-2"
+            >
+              <DollarSign className="h-4 w-4" />
+              Fund Goals
+            </Button>
+            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create New Goal
+            </Button>
+          </div>
         </div>
 
         {goals.length === 0 ? (
@@ -316,6 +432,54 @@ export default function DashboardPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onCreateGoal={handleCreateGoal}
         availableBalance={currentBalance}
+      />
+
+      {/* Simulation Modal */}
+      <SimulationModal
+        isOpen={isSimulationModalOpen}
+        onClose={() => setIsSimulationModalOpen(false)}
+        clientId={userData?.clientId || ''}
+        portfolios={goals.map(goal => ({
+          id: goal.id,
+          name: goal.name,
+          currentAmount: goal.currentAmount,
+          targetAmount: goal.targetAmount,
+          portfolioType: goal.portfolioType
+        }))}
+      />
+
+      {/* Transaction History Modal */}
+      <TransactionHistory
+        isOpen={isTransactionModalOpen}
+        onClose={() => setIsTransactionModalOpen(false)}
+        clientId={userData?.clientId || ''}
+        portfolios={goals.map(goal => ({
+          id: goal.id,
+          name: goal.name,
+          portfolioType: goal.portfolioType
+        }))}
+      />
+
+      {/* Funding Modal */}
+      <FundingModal
+        isOpen={isFundingModalOpen}
+        onClose={() => setIsFundingModalOpen(false)}
+        portfolios={goals.map(goal => ({
+          id: goal.id,
+          name: goal.name,
+          portfolioType: goal.portfolioType,
+          currentAmount: goal.currentAmount,
+          targetAmount: goal.targetAmount,
+          progress: (goal.currentAmount / goal.targetAmount) * 100
+        }))}
+        clientId={userData?.clientId || ''}
+        onTransferComplete={() => {
+          // Refresh goals data after transfer
+          const storedGoals = localStorage.getItem("goalifyGoals")
+          if (storedGoals) {
+            setGoals(JSON.parse(storedGoals))
+          }
+        }}
       />
     </div>
   )
