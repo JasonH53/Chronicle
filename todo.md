@@ -1,7 +1,6 @@
 Overview  
-GoalifyInvest is a web application designed to demystify investing for students by anchoring it to their real-life aspirations. The core problem students face with investing isn't a lack of ambition, but a disconnect; traditional platforms are abstract, focusing on percentages and market jargon. GoalifyInvest solves this by transforming abstract financial portfolios into tangible, visual goals.
 
-It's built for post-secondary students who have some disposable income but feel intimidated by investing. Whether it's saving for a grad trip, a down payment on a car, or a new laptop for school, our platform makes the process intuitive, motivating, and directly tied to their life milestones. The value lies in shifting the user's mindset from "I'm investing in a 'balanced' portfolio" to "I'm investing in my trip to Spain."
+
 
 Core Features  
 1. Goal Creation Wizard
