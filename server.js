@@ -190,6 +190,7 @@ class RBCApiService {
       throw error;
     }
   }
+
 }
 
 const rbcApi = new RBCApiService();
@@ -211,7 +212,6 @@ app.get('/', (req, res) => {
       simulateGoal: 'POST /api/goals/:portfolioId/simulate',
       deposit: 'POST /api/clients/:clientId/deposit',
       transfer: 'POST /api/portfolios/:portfolioId/transfer',
-      withdraw: 'POST /api/portfolios/:portfolioId/withdraw',
       analysis: 'GET /api/portfolios/:portfolioId/analysis',
       transactions: 'GET /api/clients/:clientId/transactions',
       portfolioTransactions: 'GET /api/portfolios/:portfolioId/transactions',
@@ -908,63 +908,6 @@ app.post('/api/portfolios/:portfolioId/transfer', async (req, res) => {
   }
 })
 
-// Withdraw cash from portfolio to client cash balance
-app.post('/api/portfolios/:portfolioId/withdraw', async (req, res) => {
-  try {
-    const { portfolioId } = req.params
-    const { amount } = req.body
-
-    if (!amount || amount <= 0) {
-      return res.status(400).json({
-        error: 'Invalid amount',
-        details: 'Amount must be a positive number'
-      })
-    }
-
-    // Get portfolio info
-    const portfolioResponse = await rbcApi.getPortfolio(portfolioId)
-    const clientId = portfolioResponse.client_id
-    const currentInvested = portfolioResponse.invested_amount || 0
-    const currentValue = portfolioResponse.current_value || 0
-
-    if (currentValue < amount) {
-      return res.status(400).json({
-        error: 'Insufficient portfolio funds',
-        details: `Portfolio only has $${currentValue} in current value`
-      })
-    }
-
-    // Get client info
-    const clientResponse = await rbcApi.getClient(clientId)
-    const currentCash = clientResponse.cash || 0
-
-    // Note: The RBC API doesn't allow direct portfolio withdrawals
-    // In a real application, this would be handled through external banking processes
-    res.json({
-      success: true,
-      message: `Withdrawal request received. Note: Portfolio withdrawals must be processed through external banking systems.`,
-      result: {
-        portfolio: {
-          id: portfolioId,
-          currentInvested: currentInvested,
-          currentValue: currentValue,
-          requestedAmount: parseFloat(amount)
-        },
-        client: {
-          id: clientId,
-          currentCash: currentCash
-        },
-        note: "Withdrawal will be processed externally and cash balance will be updated accordingly"
-      }
-    })
-  } catch (error) {
-    console.error('Withdraw error:', error)
-    res.status(500).json({
-      error: 'Failed to process withdrawal request',
-      details: error.response?.data?.message || error.message
-    })
-  }
-})
 
 // Start server
 app.listen(config.port, () => {

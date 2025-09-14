@@ -102,6 +102,7 @@ export default function DashboardPage() {
     }
   }
 
+
   const handleCreateGoal = async (goalData: Omit<Goal, "id" | "currentAmount">) => {
     try {
       if (!userData?.clientId) {
@@ -120,7 +121,7 @@ export default function DashboardPage() {
           goalName: goalData.name,
           targetAmount: goalData.targetAmount,
           targetDate: goalData.targetDate,
-          portfolioType: goalData.portfolioType.toLowerCase(),
+          portfolioType: goalData.portfolioType.toLowerCase().replace(' ', '_'),
           initialAmount: goalData.initialInvestment
         }),
       })
