@@ -74,7 +74,7 @@ export default function CreateAccountPage() {
           </Link>
           <div className="flex items-center justify-center gap-2 mb-4">
             <Target className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold">GoalifyInvest</span>
+            <span className="text-2xl font-bold">Willow</span>
           </div>
           <h1 className="text-3xl font-bold mb-2">Create Your Account</h1>
           <p className="text-muted-foreground">Start your investing journey in just a few steps</p>

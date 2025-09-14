@@ -200,7 +200,7 @@ const rbcApi = new RBCApiService();
 // Root route
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Welcome to GoalifyInvest API!',
+    message: 'Welcome to Willow API!',
     status: 'OK',
     teamId: config.teamId,
     endpoints: {
@@ -225,7 +225,7 @@ app.get('/', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
-    message: 'GoalifyInvest API is running',
+    message: 'Willow API is running',
     teamId: config.teamId
   });
 });
@@ -2205,7 +2205,7 @@ app.post('/api/portfolios/:portfolioId/transfer', async (req, res) => {
 
 // Start server
 app.listen(config.port, () => {
-  console.log(`🚀 GoalifyInvest API server running on port ${config.port}`);
+  console.log(`🚀 Willow API server running on port ${config.port}`);
   console.log(`📊 Team ID: ${config.teamId}`);
   console.log(`🔗 API Base URL: ${config.rbcApiBaseUrl}`);
 });
