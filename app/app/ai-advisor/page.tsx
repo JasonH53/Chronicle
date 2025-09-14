@@ -26,6 +26,14 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import 'highlight.js/styles/github.css'
+import { CreateGoalModal } from "@/components/create-goal-modal"
+
+interface ActionButton {
+  id: string
+  label: string
+  action: 'create_goal' | 'view_portfolio' | 'add_funds' | 'simulate'
+  data?: any
+}
 
 interface Message {
   id: string
@@ -34,6 +42,7 @@ interface Message {
   timestamp: Date
   portfolioData?: any
   fileData?: any
+  actionButtons?: ActionButton[]
 }
 
 interface UserData {
@@ -62,6 +71,7 @@ export default function AIAdvisorPage() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [goals, setGoals] = useState<Goal[]>([])
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
+  const [isCreateGoalModalOpen, setIsCreateGoalModalOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -80,14 +90,37 @@ export default function AIAdvisorPage() {
       setGoals(JSON.parse(storedGoals))
     }
 
-    // Add welcome message
+    // Add welcome message with action buttons
     setMessages([{
       id: 'welcome-message',
       role: 'assistant',
       content: `Hello! I'm your AI Financial Advisor. I can help you analyze your investment portfolios, answer questions about your goals, and provide personalized financial insights. 
 
 I have access to your portfolio data and can analyze any financial documents you upload. How can I assist you today?`,
-      timestamp: new Date()
+      timestamp: new Date(),
+      actionButtons: goals.length === 0 ? [
+        {
+          id: 'create-first-goal',
+          label: 'Create Your First Investment Goal',
+          action: 'create_goal'
+        },
+        {
+          id: 'view-portfolio',
+          label: 'View Dashboard',
+          action: 'view_portfolio'
+        }
+      ] : [
+        {
+          id: 'view-portfolio',
+          label: 'View Portfolio',
+          action: 'view_portfolio'
+        },
+        {
+          id: 'create-goal',
+          label: 'Create New Goal',
+          action: 'create_goal'
+        }
+      ]
     }])
   }, [])
 
@@ -97,6 +130,53 @@ I have access to your portfolio data and can analyze any financial documents you
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  const handleActionButton = (action: ActionButton) => {
+    switch (action.action) {
+      case 'create_goal':
+        setIsCreateGoalModalOpen(true)
+        break
+      case 'view_portfolio':
+        // Navigate to dashboard or open portfolio modal
+        window.location.href = '/dashboard'
+        break
+      case 'add_funds':
+        // Open funding modal or navigate to funding page
+        break
+      case 'simulate':
+        // Open simulation modal
+        break
+      default:
+        console.log('Unknown action:', action.action)
+    }
+  }
+
+  const handleCreateGoal = (goalData: any) => {
+    const newGoal: Goal = {
+      id: Date.now().toString(),
+      name: goalData.name,
+      targetAmount: goalData.targetAmount,
+      currentAmount: goalData.initialInvestment || 0,
+      targetDate: goalData.targetDate,
+      riskLevel: goalData.riskLevel,
+      portfolioType: goalData.portfolioType || 'balanced'
+    }
+
+    const updatedGoals = [...goals, newGoal]
+    setGoals(updatedGoals)
+    localStorage.setItem("goalifyGoals", JSON.stringify(updatedGoals))
+
+    // Add a confirmation message from AI
+    const confirmationMessage: Message = {
+      id: `confirmation-${Date.now()}`,
+      role: 'assistant',
+      content: `Great! I've created your "${goalData.name}" goal with a target of ${formatCurrency(goalData.targetAmount)}. This goal is now part of your investment portfolio. Would you like me to analyze this goal or help you create an investment strategy for it?`,
+      timestamp: new Date()
+    }
+
+    setMessages(prev => [...prev, confirmationMessage])
+    setIsCreateGoalModalOpen(false)
   }
 
   const handleSendMessage = async () => {
@@ -123,7 +203,8 @@ I have access to your portfolio data and can analyze any financial documents you
         role: 'assistant',
         content: response.content,
         timestamp: new Date(),
-        portfolioData: response.portfolioData
+        portfolioData: response.portfolioData,
+        actionButtons: response.actionButtons || []
       }
 
       setMessages(prev => [...prev, aiMessage])
@@ -423,6 +504,27 @@ I have access to your portfolio data and can analyze any financial documents you
                               )}
                             </div>
                             
+                            {/* Action Buttons */}
+                            {message.actionButtons && message.actionButtons.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {message.actionButtons.map((actionButton) => (
+                                  <Button
+                                    key={actionButton.id}
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleActionButton(actionButton)}
+                                    className="gap-2"
+                                  >
+                                    {actionButton.action === 'create_goal' && <Target className="h-4 w-4" />}
+                                    {actionButton.action === 'view_portfolio' && <PieChart className="h-4 w-4" />}
+                                    {actionButton.action === 'add_funds' && <DollarSign className="h-4 w-4" />}
+                                    {actionButton.action === 'simulate' && <BarChart3 className="h-4 w-4" />}
+                                    {actionButton.label}
+                                  </Button>
+                                ))}
+                              </div>
+                            )}
+                            
                             {message.fileData && (
                               <div className="mt-2 space-y-1">
                                 {message.fileData.map((file: any, index: number) => (
@@ -539,6 +641,14 @@ I have access to your portfolio data and can analyze any financial documents you
           </div>
         </div>
       </div>
+
+      {/* Create Goal Modal */}
+      <CreateGoalModal
+        isOpen={isCreateGoalModalOpen}
+        onClose={() => setIsCreateGoalModalOpen(false)}
+        onCreateGoal={handleCreateGoal}
+        availableBalance={parseFloat(userData?.startingBalance || '0')}
+      />
     </div>
   )
 }
