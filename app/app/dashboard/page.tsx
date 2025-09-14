@@ -32,6 +32,14 @@ interface UserData {
   clientId?: string
 }
 
+// Helper function to format dates consistently across server and client
+const formatDate = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = (date.getMonth() + 1).toString().padStart(2, '0')
+  const day = date.getDate().toString().padStart(2, '0')
+  return `${month}/${day}/${year}`
+}
+
 export default function DashboardPage() {
   const [mounted, setMounted] = useState(false)
   const [userData, setUserData] = useState<UserData | null>(null)
@@ -45,9 +53,11 @@ export default function DashboardPage() {
   const [currentBalance, setCurrentBalance] = useState(0)
   const [showAddBalance, setShowAddBalance] = useState(false)
   const [addBalanceAmount, setAddBalanceAmount] = useState('')
+  const [currentTime, setCurrentTime] = useState<Date | null>(null)
 
   useEffect(() => {
     setMounted(true)
+    setCurrentTime(new Date())
     
     // Load user data from localStorage
     const storedUser = localStorage.getItem("goalifyUser")
@@ -202,7 +212,7 @@ export default function DashboardPage() {
   const totalTargetValue = goals.reduce((sum, goal) => sum + goal.targetAmount, 0)
 
   // Prevent hydration mismatch by not rendering until mounted
-  if (!mounted || !userData) {
+  if (!mounted || !userData || !currentTime) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -397,8 +407,9 @@ export default function DashboardPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {goals.map((goal) => {
               const progress = (goal.currentAmount / goal.targetAmount) * 100
+              const targetDate = new Date(goal.targetDate)
               const daysLeft = Math.ceil(
-                (new Date(goal.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24),
+                (targetDate.getTime() - currentTime!.getTime()) / (1000 * 60 * 60 * 24),
               )
 
               return (
@@ -434,7 +445,7 @@ export default function DashboardPage() {
                         <Calendar className="h-3 w-3" />
                         <span>{daysLeft > 0 ? `${daysLeft} days left` : "Target date passed"}</span>
                       </div>
-                      <span className="text-muted-foreground">{new Date(goal.targetDate).toLocaleDateString()}</span>
+                      <span className="text-muted-foreground">{formatDate(targetDate)}</span>
                     </div>
 
                     <div className="pt-4 border-t">

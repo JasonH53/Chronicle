@@ -2223,10 +2223,14 @@ app.post('/api/ai-agent/chat', async (req, res) => {
       rbcApi // Pass RBC API instance for tool access
     });
 
+    // Convert tool calls to action buttons
+    const actionButtons = convertToolCallsToActionButtons(aiResponse.tool_calls || []);
+
     res.json({
       success: true,
       content: aiResponse.content,
-      portfolioData: aiResponse.portfolioData
+      portfolioData: aiResponse.portfolioData,
+      actionButtons: actionButtons
     });
   } catch (error) {
     console.error('AI Agent error:', error);
@@ -2322,20 +2326,88 @@ ${files.map(file => `
     }
 
     // Generate AI response using Cerebras
-    const responseContent = await generateAIResponse(message, contextData, fileContext, requestAnalysis, userData, goals);
+    const aiResponse = await generateAIResponse(message, contextData, fileContext, requestAnalysis, userData, goals);
 
     return {
-      content: responseContent,
-      portfolioData: portfolioData
+      content: aiResponse.content,
+      portfolioData: portfolioData,
+      tool_calls: aiResponse.tool_calls || []
     };
 
   } catch (error) {
     console.error('Error in AI processing:', error);
     return {
       content: "I apologize, but I encountered an error while analyzing your request. Please try rephrasing your question or contact support if the issue persists.",
-      portfolioData: null
+      portfolioData: null,
+      tool_calls: []
     };
   }
+}
+
+// Convert AI tool calls to frontend action buttons
+function convertToolCallsToActionButtons(toolCalls) {
+  const actionButtons = [];
+
+  toolCalls.forEach((toolCall, index) => {
+    const { function: func } = toolCall;
+    const args = JSON.parse(func.arguments || '{}');
+
+    switch (func.name) {
+      case 'suggest_create_goal':
+        actionButtons.push({
+          id: `create-goal-${index}`,
+          label: args.suggested_name ? `Create "${args.suggested_name}" Goal` : 'Create Investment Goal',
+          action: 'create_goal',
+          data: {
+            reason: args.reason,
+            suggested_name: args.suggested_name,
+            estimated_amount: args.estimated_amount
+          }
+        });
+        break;
+
+      case 'suggest_portfolio_analysis':
+        actionButtons.push({
+          id: `analysis-${index}`,
+          label: `Run ${args.analysis_type.charAt(0).toUpperCase() + args.analysis_type.slice(1)} Analysis`,
+          action: 'portfolio_analysis',
+          data: {
+            analysis_type: args.analysis_type,
+            reason: args.reason
+          }
+        });
+        break;
+
+      case 'suggest_simulation':
+        actionButtons.push({
+          id: `simulation-${index}`,
+          label: `Run ${args.scenario_type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())} Simulation`,
+          action: 'simulate',
+          data: {
+            scenario_type: args.scenario_type,
+            reason: args.reason
+          }
+        });
+        break;
+
+      case 'suggest_add_funds':
+        actionButtons.push({
+          id: `add-funds-${index}`,
+          label: args.suggested_amount ? `Add $${args.suggested_amount.toLocaleString()}` : 'Add Funds',
+          action: 'add_funds',
+          data: {
+            reason: args.reason,
+            suggested_amount: args.suggested_amount
+          }
+        });
+        break;
+
+      default:
+        console.log(`Unknown tool call: ${func.name}`);
+    }
+  });
+
+  return actionButtons;
 }
 
 // Generate AI response using Cerebras
@@ -2373,6 +2445,18 @@ ${(Array.isArray(goals) && goals.length) ? '  - Provided goals context available
 - Strategy design (asset mix, contributions, rebalancing)
 - Market context (summarized; no certainties)
 
+## Available Tools (Use When Appropriate)
+- **suggest_create_goal**: When user expresses interest in investing for a specific purpose (vacation, car, house, etc.)
+- **suggest_portfolio_analysis**: When user has existing goals but wants deeper performance/risk insights
+- **suggest_simulation**: When discussing future scenarios, "what-if" questions, or goal projections
+- **suggest_add_funds**: When user mentions having money to invest or goals being underfunded
+
+**Tool Usage Guidelines:**
+- Use tools when the conversation naturally leads to actionable next steps
+- Don't use tools for general questions or educational content
+- Multiple tools can be used in a single response if appropriate
+- Always provide helpful content even when using tools
+
 ## Guardrails
 - Do **not** invent data. If missing, make a **brief, conservative** assumption and label it.
 - Not legal/tax advice. Use ranges and scenarios; avoid guarantees.
@@ -2407,19 +2491,128 @@ Professional, friendly, student-aware, **plain-English**.
 
 Respond to the user’s message now.`;
 
-    const stream = await cerebras.chat.completions.create({
+    // Define available tools for the AI agent
+    const tools = [
+      {
+        type: "function",
+        function: {
+          name: "suggest_create_goal",
+          description: "Suggest creating a new investment goal when user expresses interest in investing for a specific purpose",
+          parameters: {
+            type: "object",
+            properties: {
+              reason: {
+                type: "string",
+                description: "Why this goal would be beneficial for the user"
+              },
+              suggested_name: {
+                type: "string",
+                description: "Suggested name for the goal (optional)"
+              },
+              estimated_amount: {
+                type: "number",
+                description: "Estimated target amount if mentioned (optional)"
+              }
+            },
+            required: ["reason"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "suggest_portfolio_analysis",
+          description: "Suggest portfolio analysis when user has goals but wants deeper insights",
+          parameters: {
+            type: "object",
+            properties: {
+              analysis_type: {
+                type: "string",
+                enum: ["performance", "risk", "allocation", "comprehensive"],
+                description: "Type of analysis to suggest"
+              },
+              reason: {
+                type: "string",
+                description: "Why this analysis would be helpful"
+              }
+            },
+            required: ["analysis_type", "reason"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "suggest_simulation",
+          description: "Suggest running portfolio simulations for scenario planning",
+          parameters: {
+            type: "object",
+            properties: {
+              scenario_type: {
+                type: "string",
+                enum: ["monte_carlo", "stress_test", "goal_projection"],
+                description: "Type of simulation to suggest"
+              },
+              reason: {
+                type: "string",
+                description: "Why this simulation would be valuable"
+              }
+            },
+            required: ["scenario_type", "reason"]
+          }
+        }
+      },
+      {
+        type: "function",
+        function: {
+          name: "suggest_add_funds",
+          description: "Suggest adding funds when user mentions having money to invest or needing to fund goals",
+          parameters: {
+            type: "object",
+            properties: {
+              reason: {
+                type: "string",
+                description: "Why adding funds would help achieve their goals"
+              },
+              suggested_amount: {
+                type: "number",
+                description: "Suggested amount to add if mentioned (optional)"
+              }
+            },
+            required: ["reason"]
+          }
+        }
+      }
+    ];
+
+    const response = await cerebras.chat.completions.create({
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userMessage }
       ],
       model: "qwen-3-235b-a22b-instruct-2507",
+      tools: tools,
+      tool_choice: "auto", // Let the AI decide when to use tools
       stream: false,
       max_completion_tokens: 2000,
       temperature: 0.7,
       top_p: 0.8
     });
 
-    return stream.choices[0]?.message?.content || "I apologize, but I couldn't generate a response at this time. Please try again.";
+    const message = response.choices[0]?.message;
+    
+    // Handle tool calls if present
+    if (message?.tool_calls && message.tool_calls.length > 0) {
+      return {
+        content: message.content || "I have some suggestions for you:",
+        tool_calls: message.tool_calls
+      };
+    }
+
+    return {
+      content: message?.content || "I apologize, but I couldn't generate a response at this time. Please try again.",
+      tool_calls: []
+    };
   } catch (error) {
     console.error('Cerebras AI Error:', error);
 

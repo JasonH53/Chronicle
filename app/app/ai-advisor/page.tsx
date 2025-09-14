@@ -27,12 +27,22 @@ import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
 import 'highlight.js/styles/github.css'
 import { CreateGoalModal } from "@/components/create-goal-modal"
+import FundingModal from "@/components/funding-modal"
+import { PortfolioAnalysisModal } from "@/components/portfolio-analysis-modal"
+import { SimulationModal } from "@/components/simulation-modal"
 
 interface ActionButton {
   id: string
   label: string
-  action: 'create_goal' | 'view_portfolio' | 'add_funds' | 'simulate'
-  data?: any
+  action: 'create_goal' | 'view_portfolio' | 'add_funds' | 'simulate' | 'portfolio_analysis'
+  data?: {
+    reason?: string
+    suggested_name?: string
+    estimated_amount?: number
+    suggested_amount?: number
+    analysis_type?: 'performance' | 'risk' | 'allocation' | 'comprehensive'
+    scenario_type?: 'monte_carlo' | 'stress_test' | 'goal_projection'
+  }
 }
 
 interface Message {
@@ -59,8 +69,9 @@ interface Goal {
   currentAmount: number
   targetDate: string
   portfolioType: string
-  icon: string
+  icon?: string
   portfolioId?: string
+  riskLevel?: string
 }
 
 export default function AIAdvisorPage() {
@@ -72,6 +83,10 @@ export default function AIAdvisorPage() {
   const [goals, setGoals] = useState<Goal[]>([])
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
   const [isCreateGoalModalOpen, setIsCreateGoalModalOpen] = useState(false)
+  const [isFundingModalOpen, setIsFundingModalOpen] = useState(false)
+  const [isPortfolioAnalysisModalOpen, setIsPortfolioAnalysisModalOpen] = useState(false)
+  const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false)
+  const [selectedActionData, setSelectedActionData] = useState<any>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -89,40 +104,44 @@ export default function AIAdvisorPage() {
     if (storedGoals) {
       setGoals(JSON.parse(storedGoals))
     }
+  }, [])
 
-    // Add welcome message with action buttons
-    setMessages([{
-      id: 'welcome-message',
-      role: 'assistant',
-      content: `Hello! I'm your AI Financial Advisor. I can help you analyze your investment portfolios, answer questions about your goals, and provide personalized financial insights. 
+  // Add welcome message after goals are loaded to prevent hydration mismatch
+  useEffect(() => {
+    if (mounted && messages.length === 0) {
+      setMessages([{
+        id: 'welcome-message',
+        role: 'assistant',
+        content: `Hello! I'm your AI Financial Advisor. I can help you analyze your investment portfolios, answer questions about your goals, and provide personalized financial insights. 
 
 I have access to your portfolio data and can analyze any financial documents you upload. How can I assist you today?`,
-      timestamp: new Date(),
-      actionButtons: goals.length === 0 ? [
-        {
-          id: 'create-first-goal',
-          label: 'Create Your First Investment Goal',
-          action: 'create_goal'
-        },
-        {
-          id: 'view-portfolio',
-          label: 'View Dashboard',
-          action: 'view_portfolio'
-        }
-      ] : [
-        {
-          id: 'view-portfolio',
-          label: 'View Portfolio',
-          action: 'view_portfolio'
-        },
-        {
-          id: 'create-goal',
-          label: 'Create New Goal',
-          action: 'create_goal'
-        }
-      ]
-    }])
-  }, [])
+        timestamp: new Date('2024-01-01T00:00:00Z'),
+        actionButtons: goals.length === 0 ? [
+          {
+            id: 'create-first-goal',
+            label: 'Create Your First Investment Goal',
+            action: 'create_goal'
+          },
+          {
+            id: 'view-portfolio',
+            label: 'View Dashboard',
+            action: 'view_portfolio'
+          }
+        ] : [
+          {
+            id: 'view-portfolio',
+            label: 'View Portfolio',
+            action: 'view_portfolio'
+          },
+          {
+            id: 'create-goal',
+            label: 'Create New Goal',
+            action: 'create_goal'
+          }
+        ]
+      }])
+    }
+  }, [mounted, goals, messages.length])
 
   useEffect(() => {
     scrollToBottom()
@@ -133,19 +152,25 @@ I have access to your portfolio data and can analyze any financial documents you
   }
 
   const handleActionButton = (action: ActionButton) => {
+    // Store the action data for use in modals
+    setSelectedActionData(action.data)
+    
     switch (action.action) {
       case 'create_goal':
         setIsCreateGoalModalOpen(true)
         break
       case 'view_portfolio':
-        // Navigate to dashboard or open portfolio modal
+        // Navigate to dashboard
         window.location.href = '/dashboard'
         break
+      case 'portfolio_analysis':
+        setIsPortfolioAnalysisModalOpen(true)
+        break
       case 'add_funds':
-        // Open funding modal or navigate to funding page
+        setIsFundingModalOpen(true)
         break
       case 'simulate':
-        // Open simulation modal
+        setIsSimulationModalOpen(true)
         break
       default:
         console.log('Unknown action:', action.action)
@@ -177,6 +202,32 @@ I have access to your portfolio data and can analyze any financial documents you
 
     setMessages(prev => [...prev, confirmationMessage])
     setIsCreateGoalModalOpen(false)
+    setSelectedActionData(null)
+  }
+
+  const handleFundingComplete = (fundingData: any) => {
+    setIsFundingModalOpen(false)
+    setSelectedActionData(null)
+
+    // Add confirmation message
+    const confirmationMessage: Message = {
+      id: `assistant-${Date.now()}`,
+      role: 'assistant',
+      content: `Perfect! I've processed your funding request. Your portfolio will be updated with the new funds shortly.`,
+      timestamp: new Date()
+    }
+
+    setMessages(prev => [...prev, confirmationMessage])
+  }
+
+  const handlePortfolioAnalysisComplete = () => {
+    setIsPortfolioAnalysisModalOpen(false)
+    setSelectedActionData(null)
+  }
+
+  const handleSimulationComplete = () => {
+    setIsSimulationModalOpen(false)
+    setSelectedActionData(null)
   }
 
   const handleSendMessage = async () => {
@@ -517,6 +568,7 @@ I have access to your portfolio data and can analyze any financial documents you
                                   >
                                     {actionButton.action === 'create_goal' && <Target className="h-4 w-4" />}
                                     {actionButton.action === 'view_portfolio' && <PieChart className="h-4 w-4" />}
+                                    {actionButton.action === 'portfolio_analysis' && <PieChart className="h-4 w-4" />}
                                     {actionButton.action === 'add_funds' && <DollarSign className="h-4 w-4" />}
                                     {actionButton.action === 'simulate' && <BarChart3 className="h-4 w-4" />}
                                     {actionButton.label}
@@ -648,6 +700,49 @@ I have access to your portfolio data and can analyze any financial documents you
         onClose={() => setIsCreateGoalModalOpen(false)}
         onCreateGoal={handleCreateGoal}
         availableBalance={parseFloat(userData?.startingBalance || '0')}
+      />
+
+      {/* Funding Modal */}
+      <FundingModal
+        isOpen={isFundingModalOpen}
+        onClose={() => setIsFundingModalOpen(false)}
+        portfolios={goals.map(goal => ({
+          id: goal.id,
+          name: goal.name,
+          portfolioType: goal.portfolioType,
+          currentAmount: goal.currentAmount,
+          targetAmount: goal.targetAmount,
+          progress: (goal.currentAmount / goal.targetAmount) * 100
+        }))}
+        clientId={userData?.clientId || 'demo-client'}
+        onTransferComplete={() => handleFundingComplete({})}
+      />
+
+      {/* Portfolio Analysis Modal */}
+      <PortfolioAnalysisModal
+        isOpen={isPortfolioAnalysisModalOpen}
+        onClose={handlePortfolioAnalysisComplete}
+        portfolio={goals.length > 0 ? {
+          id: goals[0].id,
+          name: goals[0].name,
+          portfolioType: goals[0].portfolioType,
+          currentAmount: goals[0].currentAmount,
+          targetAmount: goals[0].targetAmount
+        } : null}
+      />
+
+      {/* Simulation Modal */}
+      <SimulationModal
+        isOpen={isSimulationModalOpen}
+        onClose={handleSimulationComplete}
+        clientId={userData?.clientId || 'demo-client'}
+        portfolios={goals.map(goal => ({
+          id: goal.id,
+          name: goal.name,
+          currentAmount: goal.currentAmount,
+          targetAmount: goal.targetAmount,
+          portfolioType: goal.portfolioType
+        }))}
       />
     </div>
   )
