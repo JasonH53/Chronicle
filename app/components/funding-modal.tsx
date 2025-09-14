@@ -25,6 +25,7 @@ interface FundingModalProps {
   onClose: () => void
   portfolios: Portfolio[]
   clientId: string
+  currentBalance?: number
   onTransferComplete?: () => void
 }
 
@@ -33,6 +34,7 @@ export default function FundingModal({
   onClose, 
   portfolios, 
   clientId,
+  currentBalance: propCurrentBalance,
   onTransferComplete 
 }: FundingModalProps) {
   const [selectedPortfolio, setSelectedPortfolio] = useState<string>('')
@@ -41,12 +43,16 @@ export default function FundingModal({
   const [clientCash, setClientCash] = useState<number>(0)
   const [transferring, setTransferring] = useState(false)
 
-  // Fetch client cash balance
+  // Initialize client cash balance
   useEffect(() => {
     if (isOpen && clientId) {
-      fetchClientCash()
+      if (propCurrentBalance !== undefined) {
+        setClientCash(propCurrentBalance)
+      } else {
+        fetchClientCash()
+      }
     }
-  }, [isOpen, clientId])
+  }, [isOpen, clientId, propCurrentBalance])
 
   const fetchClientCash = async () => {
     try {
@@ -113,14 +119,13 @@ export default function FundingModal({
           const newBalance = (parseFloat(user.startingBalance) || 0) - transferAmount
           user.startingBalance = newBalance.toString()
           localStorage.setItem("goalifyUser", JSON.stringify(user))
+          // Update local state with new balance
+          setClientCash(newBalance)
         }
         
         // Reset form
         setAmount('')
         setSelectedPortfolio('')
-        
-        // Refresh client cash
-        await fetchClientCash()
         
         // Notify parent component
         if (onTransferComplete) {

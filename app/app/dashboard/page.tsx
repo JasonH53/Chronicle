@@ -104,11 +104,19 @@ export default function DashboardPage() {
 
       if (response.ok) {
         const data = await response.json()
+        const newBalance = data.result.client.cash
         alert(`Successfully deposited $${addBalanceAmount} to your account!`)
         setAddBalanceAmount('')
         setShowAddBalance(false)
         // Refresh balance display with actual updated balance
-        setCurrentBalance(data.result.client.cash)
+        setCurrentBalance(newBalance)
+        
+        // Update localStorage with new balance
+        if (userData) {
+          const updatedUser = { ...userData, startingBalance: newBalance.toString() }
+          setUserData(updatedUser)
+          localStorage.setItem("goalifyUser", JSON.stringify(updatedUser))
+        }
       } else {
         const errorData = await response.json()
         alert(`Error: ${errorData.error}`)
@@ -523,6 +531,7 @@ export default function DashboardPage() {
           progress: (goal.currentAmount / goal.targetAmount) * 100
         }))}
         clientId={userData?.clientId || ''}
+        currentBalance={currentBalance}
         onTransferComplete={() => {
           // Refresh goals data after transfer
           const storedGoals = localStorage.getItem("goalifyGoals")
