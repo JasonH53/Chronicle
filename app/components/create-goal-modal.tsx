@@ -103,7 +103,7 @@ export function CreateGoalModal({ isOpen, onClose, onCreateGoal, availableBalanc
   const goalIcons = [
     { value: "target", label: "General", icon: Target },
     { value: "plane", label: "Travel", icon: Plane },
-    { value: "smartphone", label: "Technology", icon: Smartphone },
+    { value: "smartphone", label: "Tech", icon: Smartphone },
     { value: "car", label: "Vehicle", icon: Car },
     { value: "graduation", label: "Education", icon: GraduationCap },
   ]
@@ -203,14 +203,14 @@ export function CreateGoalModal({ isOpen, onClose, onCreateGoal, availableBalanc
                     key={iconOption.value}
                     type="button"
                     onClick={() => handleInputChange("icon", iconOption.value)}
-                    className={`p-3 rounded-lg border-2 transition-colors ${
+                    className={`p-3 rounded-lg border-2 transition-colors text-center ${
                       formData.icon === iconOption.value
                         ? "border-primary bg-primary/10"
                         : "border-border hover:border-primary/50"
                     }`}
                   >
                     <IconComponent className="h-5 w-5 mx-auto" />
-                    <p className="text-xs mt-1">{iconOption.label}</p>
+                    <p className="text-xs mt-1 text-center">{iconOption.label}</p>
                   </button>
                 )
               })}

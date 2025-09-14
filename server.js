@@ -2414,10 +2414,10 @@ function convertToolCallsToActionButtons(toolCalls) {
 // Generate AI response using Cerebras
 async function generateAIResponse(userMessage, portfolioContext, fileContext, requestAnalysis, userData, goals) {
   try {
-    const systemPrompt = `# GoalifyInvest — AI Financial Coach (Student-Focused)
+    const systemPrompt = `# Willow — AI Financial Coach (Student-Focused)
 
 ## Role
-You are GoalifyInvest’s **AI Financial Advisor**. Use the user’s portfolio data and uploaded financial documents to deliver **concise, actionable guidance** for students.
+You are Willow’s **AI Financial Advisor**. Use the user’s portfolio data and uploaded financial documents to deliver **concise, actionable guidance** for students.
 
 ## Data You Can Use
 - **User**

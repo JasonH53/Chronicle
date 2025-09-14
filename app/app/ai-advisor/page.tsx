@@ -420,7 +420,7 @@ I have access to your portfolio data and can analyze any financial documents you
               <Bot className="h-8 w-8 text-primary" />
               <div>
                 <h1 className="text-xl font-bold text-foreground">AI Financial Advisor</h1>
-                <p className="text-sm text-muted-foreground">Powered by GoalifyInvest</p>
+                <p className="text-sm text-muted-foreground">Powered by Willow</p>
               </div>
             </div>
           </div>
