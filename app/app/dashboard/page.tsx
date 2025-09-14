@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Target, Plus, TrendingUp, Calendar, DollarSign, Plane, Smartphone, Car, GraduationCap, BarChart3, History, PieChart } from "lucide-react"
+import { Target, Plus, TrendingUp, Calendar, DollarSign, Plane, Smartphone, Car, GraduationCap, BarChart3, History, PieChart, Bot } from "lucide-react"
 import { CreateGoalModal } from "@/components/create-goal-modal"
 import { SimulationModal } from "@/components/simulation-modal"
 import { PortfolioAnalysisModal } from "@/components/portfolio-analysis-modal"
 import { TransactionHistory } from "@/components/transaction-history"
 import FundingModal from "@/components/funding-modal"
+import Link from "next/link"
 
 interface Goal {
   id: string
@@ -32,6 +33,7 @@ interface UserData {
 }
 
 export default function DashboardPage() {
+  const [mounted, setMounted] = useState(false)
   const [userData, setUserData] = useState<UserData | null>(null)
   const [goals, setGoals] = useState<Goal[]>([])
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
@@ -45,6 +47,8 @@ export default function DashboardPage() {
   const [addBalanceAmount, setAddBalanceAmount] = useState('')
 
   useEffect(() => {
+    setMounted(true)
+    
     // Load user data from localStorage
     const storedUser = localStorage.getItem("goalifyUser")
     const storedGoals = localStorage.getItem("goalifyGoals")
@@ -197,7 +201,8 @@ export default function DashboardPage() {
   const totalInvested = goals.reduce((sum, goal) => sum + goal.currentAmount, 0)
   const totalTargetValue = goals.reduce((sum, goal) => sum + goal.targetAmount, 0)
 
-  if (!userData) {
+  // Prevent hydration mismatch by not rendering until mounted
+  if (!mounted || !userData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -333,6 +338,15 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold">Your Investment Goals</h2>
           <div className="flex items-center gap-2">
+            <Link href="/ai-advisor">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+              >
+                <Bot className="h-4 w-4" />
+                AI Advisor
+              </Button>
+            </Link>
             <Button 
               variant="outline" 
               onClick={() => setIsSimulationModalOpen(true)} 

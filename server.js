@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
 const config = require('./config');
+const Cerebras = require('@cerebras/cerebras_cloud_sdk');
 
 const app = express();
 
@@ -195,6 +196,11 @@ class RBCApiService {
 
 const rbcApi = new RBCApiService();
 
+// Initialize Cerebras AI
+const cerebras = new Cerebras({
+  apiKey: config.CEREBRAS_API_KEY
+});
+
 // Routes
 
 // Root route
@@ -216,7 +222,8 @@ app.get('/', (req, res) => {
       transactions: 'GET /api/clients/:clientId/transactions',
       portfolioTransactions: 'GET /api/portfolios/:portfolioId/transactions',
       simulateAll: 'POST /api/clients/:clientId/simulate-all',
-      addBalance: 'POST /api/clients/:clientId/add-balance'
+      addBalance: 'POST /api/clients/:clientId/add-balance',
+      aiAgent: 'POST /api/ai-agent/chat'
     }
   });
 });
@@ -2091,6 +2098,482 @@ app.post('/api/portfolios/:portfolioId/transfer', async (req, res) => {
     })
   }
 })
+
+// AI Agent Chat Endpoint
+app.post('/api/ai-agent/chat', async (req, res) => {
+  try {
+    const { userData, goals, message, files } = req.body;
+
+    // AI Agent with API tool access
+    const aiResponse = await processAIRequest({
+      userData,
+      goals,
+      message,
+      files,
+      rbcApi // Pass RBC API instance for tool access
+    });
+
+    res.json({
+      success: true,
+      content: aiResponse.content,
+      portfolioData: aiResponse.portfolioData
+    });
+  } catch (error) {
+    console.error('AI Agent error:', error);
+    res.status(500).json({
+      error: 'Failed to process AI request',
+      details: error.message
+    });
+  }
+});
+
+// AI Agent Processing Function with Cerebras AI
+async function processAIRequest({ userData, goals, message, files, rbcApi }) {
+  try {
+    // Analyze the user's request and determine what data/tools are needed
+    const requestAnalysis = analyzeUserRequest(message, goals);
+    
+    let portfolioData = null;
+    let contextData = '';
+
+    // Gather portfolio data if needed
+    if (requestAnalysis.needsPortfolioData && userData?.clientId) {
+      try {
+        // Get client information
+        const clientInfo = await rbcApi.getClient(userData.clientId);
+        
+        // Get all portfolios for the client
+        let portfolios = [];
+        try {
+          portfolios = await rbcApi.getClientPortfolios(userData.clientId);
+        } catch (error) {
+          console.log('Using local portfolio data as fallback');
+          portfolios = goals.map(goal => ({
+            id: goal.portfolioId || goal.id,
+            type: goal.portfolioType?.toLowerCase()?.replace(/ /g, '_') || 'balanced',
+            current_value: goal.currentAmount || 0,
+            target_amount: goal.targetAmount || 0,
+            name: goal.name
+          }));
+        }
+
+        portfolioData = {
+          client: clientInfo,
+          portfolios: portfolios,
+          totalValue: portfolios.reduce((sum, p) => sum + (p.current_value || 0), 0),
+          totalTarget: portfolios.reduce((sum, p) => sum + (p.target_amount || 0), 0)
+        };
+
+        // Prepare context for AI
+        contextData = `
+PORTFOLIO DATA:
+- Total Portfolio Value: $${portfolioData.totalValue.toLocaleString()}
+- Total Target Value: $${portfolioData.totalTarget.toLocaleString()}
+- Available Cash: $${(clientInfo.cash || 0).toLocaleString()}
+- Number of Goals: ${goals.length}
+
+INDIVIDUAL GOALS:
+${goals.map(goal => `
+- ${goal.name}: $${goal.currentAmount.toLocaleString()} / $${goal.targetAmount.toLocaleString()} (${((goal.currentAmount / goal.targetAmount) * 100).toFixed(1)}% complete)
+  Portfolio Type: ${goal.portfolioType}
+  Target Date: ${goal.targetDate}
+`).join('')}
+
+PORTFOLIOS:
+${portfolios.map(portfolio => `
+- Portfolio ID: ${portfolio.id}
+- Type: ${portfolio.type}
+- Current Value: $${(portfolio.current_value || 0).toLocaleString()}
+- Target Amount: $${(portfolio.target_amount || 0).toLocaleString()}
+`).join('')}
+        `;
+        
+      } catch (error) {
+        console.error('Error fetching portfolio data:', error);
+        contextData = `
+PORTFOLIO DATA (LOCAL):
+- Number of Goals: ${goals.length}
+- Goals: ${goals.map(g => `${g.name} (${g.portfolioType}): $${g.currentAmount.toLocaleString()} / $${g.targetAmount.toLocaleString()}`).join(', ')}
+        `;
+      }
+    }
+
+    // Prepare file context if files are uploaded
+    let fileContext = '';
+    if (files && files.length > 0) {
+      fileContext = `
+UPLOADED FILES:
+${files.map(file => `
+- File: ${file.name}
+- Type: ${file.type}
+- Content Preview: ${file.content ? file.content.substring(0, 500) + '...' : 'No content available'}
+`).join('')}
+      `;
+    }
+
+    // Generate AI response using Cerebras
+    const responseContent = await generateAIResponse(message, contextData, fileContext, requestAnalysis, userData, goals);
+
+    return {
+      content: responseContent,
+      portfolioData: portfolioData
+    };
+
+  } catch (error) {
+    console.error('Error in AI processing:', error);
+    return {
+      content: "I apologize, but I encountered an error while analyzing your request. Please try rephrasing your question or contact support if the issue persists.",
+      portfolioData: null
+    };
+  }
+}
+
+// Generate AI response using Cerebras
+async function generateAIResponse(userMessage, portfolioContext, fileContext, requestAnalysis, userData, goals) {
+  try {
+    const systemPrompt = `You are an expert AI Financial Advisor for GoalifyInvest, a platform that helps students invest towards their real-life goals. You have access to the user's portfolio data and can analyze financial documents.
+
+CAPABILITIES:
+- Portfolio analysis and performance review
+- Risk assessment and recommendations
+- Goal tracking and progress analysis
+- Financial document analysis
+- Investment strategy recommendations
+- Market insights and projections
+
+PERSONALITY:
+- Professional but friendly and approachable
+- Educational and helpful
+- Focused on student-friendly advice
+- Clear and concise explanations
+- Encouraging and motivational
+
+CONTEXT ABOUT USER:
+${userData ? `
+- Name: ${userData.name}
+- Email: ${userData.email}
+- Starting Balance: $${userData.startingBalance}
+- Client ID: ${userData.clientId || 'Not available'}
+` : 'No user data available'}
+
+${portfolioContext || 'No portfolio data available'}
+
+${fileContext || 'No files uploaded'}
+
+INSTRUCTIONS:
+- Always provide actionable, specific advice
+- Use the actual data provided in your analysis
+- Include specific dollar amounts and percentages when available
+- Suggest concrete next steps
+- Keep responses focused and relevant to the user's question
+- If analyzing files, provide specific insights based on the content
+- Always consider the student context (limited income, learning about investing)
+
+FORMATTING REQUIREMENTS (CRITICAL):
+- **Always format your response using Markdown**
+- Use headers (## Main Topic, ### Subtopic) to organize sections
+- Use **bold** for important points and key numbers
+- Use bullet points (-) for lists and recommendations
+- Use numbered lists (1.) for step-by-step instructions
+- Use \`backticks\` for specific dollar amounts, percentages, and financial terms
+- Use > blockquotes for important tips or warnings
+- Use tables when comparing multiple options or data points
+- Add appropriate emojis (📈, 💰, 🎯, ⚠️, ✅) to make content engaging
+- Structure responses with clear sections and good visual hierarchy
+
+Current request type: ${requestAnalysis.type}
+Request intent: ${requestAnalysis.intent}`;
+
+    const stream = await cerebras.chat.completions.create({
+      messages: [
+        {
+          "role": "system",
+          "content": systemPrompt
+        },
+        {
+          "role": "user", 
+          "content": userMessage
+        }
+      ],
+      model: 'qwen-3-235b-a22b-instruct-2507',
+      stream: false, // Use non-streaming for simpler handling
+      max_completion_tokens: 2000,
+      temperature: 0.7,
+      top_p: 0.8
+    });
+
+    return stream.choices[0]?.message?.content || "I apologize, but I couldn't generate a response at this time. Please try again.";
+
+  } catch (error) {
+    console.error('Cerebras AI Error:', error);
+    
+    // Fallback to rule-based response if AI fails
+    if (requestAnalysis.needsPortfolioData && goals.length > 0) {
+      return generateFallbackResponse(requestAnalysis, goals);
+    } else {
+      return generateGeneralAdviceResponse(requestAnalysis, goals, userData);
+    }
+  }
+}
+
+// Analyze what the user is asking for
+function analyzeUserRequest(message, goals) {
+  const lowerMessage = message.toLowerCase();
+  
+  const analysis = {
+    type: 'general',
+    needsPortfolioData: false,
+    needsFileAnalysis: false,
+    intent: 'advice'
+  };
+
+  // Portfolio analysis keywords
+  const portfolioKeywords = ['portfolio', 'performance', 'analysis', 'returns', 'growth', 'value', 'investment'];
+  const riskKeywords = ['risk', 'volatility', 'safe', 'conservative', 'aggressive'];
+  const goalKeywords = ['goal', 'target', 'progress', 'timeline', 'achieve'];
+  const recommendationKeywords = ['recommend', 'suggest', 'advice', 'should', 'better', 'improve'];
+
+  if (portfolioKeywords.some(keyword => lowerMessage.includes(keyword))) {
+    analysis.needsPortfolioData = true;
+    analysis.type = 'portfolio_analysis';
+  }
+
+  if (riskKeywords.some(keyword => lowerMessage.includes(keyword))) {
+    analysis.needsPortfolioData = true;
+    analysis.type = 'risk_analysis';
+  }
+
+  if (goalKeywords.some(keyword => lowerMessage.includes(keyword))) {
+    analysis.type = 'goal_tracking';
+  }
+
+  if (recommendationKeywords.some(keyword => lowerMessage.includes(keyword))) {
+    analysis.intent = 'recommendation';
+    analysis.needsPortfolioData = true;
+  }
+
+  // Check if files are mentioned or if this is a file analysis request
+  const fileKeywords = ['file', 'document', 'upload', 'analyze', 'statement', 'report'];
+  if (fileKeywords.some(keyword => lowerMessage.includes(keyword))) {
+    analysis.needsFileAnalysis = true;
+    analysis.type = 'file_analysis';
+  }
+
+  return analysis;
+}
+
+// Generate portfolio analysis response
+function generatePortfolioAnalysisResponse(analysis, portfolioData, goals) {
+  const { client, portfolios, totalValue, totalTarget } = portfolioData;
+  
+  let response = `## Portfolio Analysis\n\n`;
+  
+  response += `**Current Portfolio Overview:**\n`;
+  response += `• Total Portfolio Value: $${totalValue.toLocaleString()}\n`;
+  response += `• Total Target Value: $${totalTarget.toLocaleString()}\n`;
+  response += `• Available Cash: $${(client.cash || 0).toLocaleString()}\n`;
+  response += `• Number of Goals: ${goals.length}\n\n`;
+
+  if (analysis.type === 'portfolio_analysis') {
+    response += `**Performance Insights:**\n`;
+    
+    portfolios.forEach((portfolio, index) => {
+      const goal = goals.find(g => g.portfolioId === portfolio.id || g.id === portfolio.id);
+      if (goal) {
+        const progress = ((portfolio.current_value || 0) / (portfolio.target_amount || 1)) * 100;
+        response += `• ${goal.name}: ${progress.toFixed(1)}% complete (${goal.portfolioType} strategy)\n`;
+      }
+    });
+
+    response += `\n**Recommendations:**\n`;
+    
+    if (totalValue < totalTarget * 0.5) {
+      response += `• Consider increasing your monthly contributions to accelerate goal achievement\n`;
+      response += `• Your current pace may require extending target timelines\n`;
+    }
+    
+    if (client.cash > 1000) {
+      response += `• You have $${client.cash.toLocaleString()} in cash - consider investing more to maximize growth\n`;
+    }
+
+    const conservativeGoals = goals.filter(g => g.portfolioType.includes('Conservative')).length;
+    const aggressiveGoals = goals.filter(g => g.portfolioType.includes('Aggressive')).length;
+    
+    if (conservativeGoals > aggressiveGoals && goals.length > 1) {
+      response += `• Consider diversifying with some growth-oriented investments for better long-term returns\n`;
+    }
+
+  } else if (analysis.type === 'risk_analysis') {
+    response += `**Risk Assessment:**\n`;
+    
+    const portfolioTypes = goals.map(g => g.portfolioType);
+    const riskScore = calculateRiskScore(portfolioTypes);
+    
+    response += `• Overall Risk Level: ${getRiskLevel(riskScore)}\n`;
+    response += `• Portfolio Diversification: ${portfolioTypes.length > 1 ? 'Good' : 'Consider adding more variety'}\n`;
+    
+    if (riskScore < 3) {
+      response += `• Your portfolio is quite conservative. Consider adding some growth investments for higher returns.\n`;
+    } else if (riskScore > 7) {
+      response += `• Your portfolio is aggressive. Ensure you're comfortable with potential volatility.\n`;
+    }
+  }
+
+  return response;
+}
+
+// Generate response for file analysis
+async function analyzeFinancialFiles(files, goals) {
+  let response = `## Financial Document Analysis\n\n`;
+  
+  response += `I've analyzed ${files.length} financial document(s):\n\n`;
+  
+  files.forEach((file, index) => {
+    response += `**${file.name}**\n`;
+    
+    if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
+      response += `• File Type: CSV Data\n`;
+      response += `• Analysis: This appears to be financial data. I can help you understand trends, calculate returns, or compare with your current portfolio.\n`;
+    } else if (file.type === 'application/pdf') {
+      response += `• File Type: PDF Document\n`;
+      response += `• Analysis: I can extract key financial information and provide insights on investment strategies or performance metrics.\n`;
+    } else {
+      response += `• File Type: ${file.type}\n`;
+      response += `• Analysis: I'll analyze the content for financial insights and recommendations.\n`;
+    }
+    
+    // Basic content analysis (simplified)
+    const content = file.content.toLowerCase();
+    if (content.includes('dividend') || content.includes('yield')) {
+      response += `• Found dividend/yield information - I can help optimize your income strategy\n`;
+    }
+    if (content.includes('expense') || content.includes('fee')) {
+      response += `• Found expense information - I can help minimize costs\n`;
+    }
+    if (content.includes('return') || content.includes('performance')) {
+      response += `• Found performance data - I can benchmark against your goals\n`;
+    }
+    
+    response += `\n`;
+  });
+
+  response += `**Recommendations based on uploaded files:**\n`;
+  response += `• Compare the data with your current ${goals.length} investment goals\n`;
+  response += `• Look for optimization opportunities in asset allocation\n`;
+  response += `• Consider tax implications and fee structures\n`;
+  response += `• Evaluate if adjustments to your portfolio strategy are needed\n\n`;
+  
+  response += `Would you like me to dive deeper into any specific aspect of these documents?`;
+
+  return response;
+}
+
+// Generate general advice response
+function generateGeneralAdviceResponse(analysis, goals, userData) {
+  let response = '';
+
+  if (analysis.type === 'goal_tracking') {
+    response = `## Goal Progress Update\n\n`;
+    
+    if (goals.length === 0) {
+      response += `You haven't set up any investment goals yet. I recommend starting with:\n`;
+      response += `• A short-term goal (6-12 months) for emergency fund or upcoming purchase\n`;
+      response += `• A medium-term goal (2-5 years) for major expenses\n`;
+      response += `• A long-term goal (5+ years) for retirement or wealth building\n`;
+    } else {
+      response += `You have ${goals.length} active investment goal(s):\n\n`;
+      
+      goals.forEach((goal, index) => {
+        const progress = (goal.currentAmount / goal.targetAmount) * 100;
+        const daysLeft = Math.ceil((new Date(goal.targetDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+        
+        response += `**${goal.name}**\n`;
+        response += `• Progress: ${progress.toFixed(1)}% (${goal.currentAmount.toLocaleString()} / ${goal.targetAmount.toLocaleString()})\n`;
+        response += `• Strategy: ${goal.portfolioType}\n`;
+        response += `• Timeline: ${daysLeft > 0 ? `${daysLeft} days remaining` : 'Target date passed'}\n`;
+        
+        if (progress < 50 && daysLeft < 365) {
+          response += `• ⚠️ Consider increasing contributions to stay on track\n`;
+        } else if (progress > 80) {
+          response += `• 🎉 Great progress! You're on track to achieve this goal\n`;
+        }
+        
+        response += `\n`;
+      });
+    }
+  } else {
+    response = `## Financial Guidance\n\n`;
+    response += `I'm here to help you with your investment journey! Here's what I can assist you with:\n\n`;
+    response += `**Portfolio Analysis:**\n`;
+    response += `• Review your current investment performance\n`;
+    response += `• Analyze risk levels and diversification\n`;
+    response += `• Compare your progress against benchmarks\n\n`;
+    
+    response += `**Goal Planning:**\n`;
+    response += `• Track progress toward your financial objectives\n`;
+    response += `• Optimize contribution strategies\n`;
+    response += `• Adjust timelines and targets as needed\n\n`;
+    
+    response += `**Document Analysis:**\n`;
+    response += `• Upload bank statements, investment reports, or tax documents\n`;
+    response += `• Get insights on fees, performance, and optimization opportunities\n`;
+    response += `• Receive personalized recommendations based on your data\n\n`;
+    
+    response += `What specific aspect of your finances would you like to explore today?`;
+  }
+
+  return response;
+}
+
+// Generate fallback response when API calls fail
+function generateFallbackResponse(analysis, goals) {
+  let response = `## Portfolio Insights (Based on Local Data)\n\n`;
+  
+  if (goals.length > 0) {
+    const totalInvested = goals.reduce((sum, goal) => sum + goal.currentAmount, 0);
+    const totalTarget = goals.reduce((sum, goal) => sum + goal.targetAmount, 0);
+    const overallProgress = (totalInvested / totalTarget) * 100;
+    
+    response += `**Current Status:**\n`;
+    response += `• Total Invested: $${totalInvested.toLocaleString()}\n`;
+    response += `• Total Target: $${totalTarget.toLocaleString()}\n`;
+    response += `• Overall Progress: ${overallProgress.toFixed(1)}%\n\n`;
+    
+    response += `**Goal Breakdown:**\n`;
+    goals.forEach(goal => {
+      const progress = (goal.currentAmount / goal.targetAmount) * 100;
+      response += `• ${goal.name}: ${progress.toFixed(1)}% complete\n`;
+    });
+    
+    response += `\n*Note: I'm currently using your local data. For real-time portfolio analysis, please ensure your account is properly connected.*`;
+  } else {
+    response += `I notice you don't have any investment goals set up yet. Would you like help creating your first investment goal?`;
+  }
+  
+  return response;
+}
+
+// Helper functions
+function calculateRiskScore(portfolioTypes) {
+  const riskMap = {
+    'Very Conservative': 1,
+    'Conservative': 3,
+    'Balanced': 5,
+    'Growth': 7,
+    'Aggressive Growth': 9
+  };
+  
+  const scores = portfolioTypes.map(type => riskMap[type] || 5);
+  return scores.reduce((sum, score) => sum + score, 0) / scores.length;
+}
+
+function getRiskLevel(score) {
+  if (score <= 2) return 'Very Low';
+  if (score <= 4) return 'Low';
+  if (score <= 6) return 'Moderate';
+  if (score <= 8) return 'High';
+  return 'Very High';
+}
 
 
 // Start server
