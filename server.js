@@ -2234,6 +2234,7 @@ app.post('/api/ai-agent/chat', async (req, res) => {
     });
   } catch (error) {
     console.error('AI Agent error:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({
       error: 'Failed to process AI request',
       details: error.message
@@ -2245,7 +2246,7 @@ app.post('/api/ai-agent/chat', async (req, res) => {
 async function processAIRequest({ userData, goals, message, files, rbcApi }) {
   try {
     // Analyze the user's request and determine what data/tools are needed
-    const requestAnalysis = analyzeUserRequest(message, goals);
+    const requestAnalysis = analyzeUserRequest(message, goals, files);
     
     let portfolioData = null;
     let contextData = '';
@@ -2586,10 +2587,16 @@ Respond to the user’s message now.`;
       }
     ];
 
+    // Prepare the user message with file content if available
+    let fullUserMessage = userMessage;
+    if (fileContext && fileContext.trim()) {
+      fullUserMessage = `${userMessage}\n\n${fileContext}`;
+    }
+
     const response = await cerebras.chat.completions.create({
       messages: [
         { role: "system", content: systemPrompt },
-        { role: "user", content: userMessage }
+        { role: "user", content: fullUserMessage }
       ],
       model: "qwen-3-235b-a22b-instruct-2507",
       tools: tools,
@@ -2618,17 +2625,23 @@ Respond to the user’s message now.`;
     console.error('Cerebras AI Error:', error);
 
     // Fallback to rule-based response if AI fails
+    let fallbackContent;
     if (requestAnalysis?.needsPortfolioData && Array.isArray(goals) && goals.length > 0) {
-      return generateFallbackResponse(requestAnalysis, goals);
+      fallbackContent = generateFallbackResponse(requestAnalysis, goals, fileContext);
     } else {
-      return generateGeneralAdviceResponse(requestAnalysis, goals, userData);
+      fallbackContent = generateGeneralAdviceResponse(requestAnalysis, goals, userData, fileContext);
     }
+    
+    return {
+      content: fallbackContent,
+      tool_calls: []
+    };
   }
 }
 
 
 // Analyze what the user is asking for
-function analyzeUserRequest(message, goals) {
+function analyzeUserRequest(message, goals, files = []) {
   const lowerMessage = message.toLowerCase();
   
   const analysis = {
@@ -2637,6 +2650,12 @@ function analyzeUserRequest(message, goals) {
     needsFileAnalysis: false,
     intent: 'advice'
   };
+  
+  // If files are uploaded, automatically set file analysis flag
+  if (files && files.length > 0) {
+    analysis.needsFileAnalysis = true;
+    analysis.type = 'file_analysis';
+  }
 
   // Portfolio analysis keywords
   const portfolioKeywords = ['portfolio', 'performance', 'analysis', 'returns', 'growth', 'value', 'investment'];
@@ -2780,8 +2799,52 @@ async function analyzeFinancialFiles(files, goals) {
 }
 
 // Generate general advice response
-function generateGeneralAdviceResponse(analysis, goals, userData) {
+function generateGeneralAdviceResponse(analysis, goals, userData, fileContext = '') {
   let response = '';
+
+  // Handle file analysis if files are uploaded
+  if (fileContext && fileContext.trim()) {
+    response += `## File Analysis\n\n`;
+    response += `I've reviewed your uploaded file(s). Here's what I found:\n\n`;
+    
+    // Extract key information from file content
+    const lines = fileContext.split('\n').filter(line => line.trim());
+    const fileInfo = lines.find(line => line.includes('File:'));
+    const contentPreview = lines.find(line => line.includes('Content Preview:'));
+    
+    if (fileInfo) {
+      response += `**File Details:**\n`;
+      response += `${fileInfo}\n\n`;
+    }
+    
+    if (contentPreview) {
+      response += `**Content Summary:**\n`;
+      const content = contentPreview.replace('- Content Preview: ', '');
+      
+      // Analyze content for financial data
+      if (content.toLowerCase().includes('date') && content.toLowerCase().includes('amount')) {
+        response += `• This appears to be transaction or portfolio data\n`;
+        response += `• I can see date and amount columns which suggest financial records\n`;
+      }
+      
+      if (content.toLowerCase().includes('symbol') || content.toLowerCase().includes('ticker')) {
+        response += `• Contains investment symbols/tickers\n`;
+        response += `• This looks like portfolio holdings or trading data\n`;
+      }
+      
+      if (content.toLowerCase().includes('balance') || content.toLowerCase().includes('total')) {
+        response += `• Shows balance or total information\n`;
+        response += `• Could be account statements or portfolio summaries\n`;
+      }
+      
+      response += `\n**Recommendations:**\n`;
+      response += `• Upload complete files for more detailed analysis\n`;
+      response += `• Consider organizing your data with clear headers\n`;
+      response += `• I can help analyze portfolio performance, risk, and allocation\n\n`;
+    }
+    
+    response += `---\n\n`;
+  }
 
   if (analysis.type === 'goal_tracking') {
     response = `## Goal Progress Update\n\n`;
@@ -2837,8 +2900,56 @@ function generateGeneralAdviceResponse(analysis, goals, userData) {
 }
 
 // Generate fallback response when API calls fail
-function generateFallbackResponse(analysis, goals) {
+function generateFallbackResponse(analysis, goals, fileContext = '') {
   let response = `## Portfolio Insights (Based on Local Data)\n\n`;
+  
+  // Handle file analysis if files are uploaded
+  if (fileContext && fileContext.trim()) {
+    response += `## Uploaded File Analysis\n\n`;
+    
+    // Extract key information from file content
+    const lines = fileContext.split('\n').filter(line => line.trim());
+    const fileInfo = lines.find(line => line.includes('File:'));
+    const contentPreview = lines.find(line => line.includes('Content Preview:'));
+    
+    if (fileInfo) {
+      response += `**File:** ${fileInfo.replace('- File: ', '')}\n`;
+    }
+    
+    if (contentPreview) {
+      const content = contentPreview.replace('- Content Preview: ', '');
+      response += `**Analysis:** I can see this contains financial data with the following characteristics:\n\n`;
+      
+      // Parse CSV-like content
+      if (content.includes(',') && content.includes('\n')) {
+        const rows = content.split('\n').filter(row => row.trim());
+        if (rows.length > 1) {
+          const headers = rows[0].split(',');
+          response += `• **Data Structure:** ${headers.length} columns detected\n`;
+          response += `• **Headers:** ${headers.join(', ')}\n`;
+          response += `• **Records:** ${rows.length - 1} data rows\n\n`;
+          
+          // Analyze financial patterns
+          if (headers.some(h => h.toLowerCase().includes('amount') || h.toLowerCase().includes('price'))) {
+            response += `• **Financial Data:** Contains monetary amounts\n`;
+          }
+          if (headers.some(h => h.toLowerCase().includes('date'))) {
+            response += `• **Time Series:** Contains date information\n`;
+          }
+          if (headers.some(h => h.toLowerCase().includes('symbol') || h.toLowerCase().includes('ticker'))) {
+            response += `• **Securities:** Contains investment symbols\n`;
+          }
+        }
+      }
+      
+      response += `\n**Next Steps:**\n`;
+      response += `• I can provide detailed analysis once the Cerebras AI service is restored\n`;
+      response += `• For now, I can see your file structure and basic patterns\n`;
+      response += `• Consider uploading additional context or asking specific questions\n\n`;
+    }
+    
+    response += `---\n\n`;
+  }
   
   if (goals.length > 0) {
     const totalInvested = goals.reduce((sum, goal) => sum + goal.currentAmount, 0);

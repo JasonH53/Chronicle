@@ -177,32 +177,84 @@ I have access to your portfolio data and can analyze any financial documents you
     }
   }
 
-  const handleCreateGoal = (goalData: any) => {
-    const newGoal: Goal = {
-      id: Date.now().toString(),
-      name: goalData.name,
-      targetAmount: goalData.targetAmount,
-      currentAmount: goalData.initialInvestment || 0,
-      targetDate: goalData.targetDate,
-      riskLevel: goalData.riskLevel,
-      portfolioType: goalData.portfolioType || 'balanced'
+  const handleCreateGoal = async (goalData: any) => {
+    try {
+      if (!userData?.clientId) {
+        alert('Please create an account first')
+        return
+      }
+
+      // Call the backend API to create a goal (portfolio) - same as dashboard
+      const response = await fetch('http://localhost:3001/api/goals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clientId: userData.clientId,
+          goalName: goalData.name,
+          targetAmount: goalData.targetAmount,
+          targetDate: goalData.targetDate,
+          portfolioType: (goalData.portfolioType || 'balanced').toLowerCase().replace(' ', '_'),
+          initialAmount: goalData.initialInvestment || 100 // Default minimum investment
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const newGoal: Goal = {
+          id: data.portfolio.id, // Use real portfolio ID from API
+          name: goalData.name,
+          targetAmount: goalData.targetAmount,
+          currentAmount: goalData.initialInvestment || 100,
+          targetDate: goalData.targetDate,
+          riskLevel: goalData.riskLevel,
+          portfolioType: goalData.portfolioType || 'balanced',
+          portfolioId: data.portfolio.id // Store the real portfolio ID
+        }
+
+        const updatedGoals = [...goals, newGoal]
+        setGoals(updatedGoals)
+        localStorage.setItem("goalifyGoals", JSON.stringify(updatedGoals))
+
+        // Add a confirmation message from AI
+        const confirmationMessage: Message = {
+          id: `confirmation-${Date.now()}`,
+          role: 'assistant',
+          content: `Perfect! I've successfully created your "${goalData.name}" goal with a target of ${formatCurrency(goalData.targetAmount)} and connected it to a real investment portfolio. Your portfolio is now active and ready for analysis. Would you like me to run a portfolio analysis or help you with your investment strategy?`,
+          timestamp: new Date()
+        }
+
+        setMessages(prev => [...prev, confirmationMessage])
+      } else {
+        console.error('Goal creation failed:', await response.text())
+        
+        // Add error message
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          role: 'assistant',
+          content: `I apologize, but I encountered an error while creating your goal. Please try again or create the goal manually from the dashboard.`,
+          timestamp: new Date()
+        }
+        
+        setMessages(prev => [...prev, errorMessage])
+      }
+    } catch (error) {
+      console.error('Error creating goal:', error)
+      
+      // Add error message
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: 'assistant',
+        content: `I encountered a technical error while creating your goal. Please try again or use the dashboard to create your goal manually.`,
+        timestamp: new Date()
+      }
+      
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsCreateGoalModalOpen(false)
+      setSelectedActionData(null)
     }
-
-    const updatedGoals = [...goals, newGoal]
-    setGoals(updatedGoals)
-    localStorage.setItem("goalifyGoals", JSON.stringify(updatedGoals))
-
-    // Add a confirmation message from AI
-    const confirmationMessage: Message = {
-      id: `confirmation-${Date.now()}`,
-      role: 'assistant',
-      content: `Great! I've created your "${goalData.name}" goal with a target of ${formatCurrency(goalData.targetAmount)}. This goal is now part of your investment portfolio. Would you like me to analyze this goal or help you create an investment strategy for it?`,
-      timestamp: new Date()
-    }
-
-    setMessages(prev => [...prev, confirmationMessage])
-    setIsCreateGoalModalOpen(false)
-    setSelectedActionData(null)
   }
 
   const handleFundingComplete = (fundingData: any) => {
@@ -707,7 +759,7 @@ I have access to your portfolio data and can analyze any financial documents you
         isOpen={isFundingModalOpen}
         onClose={() => setIsFundingModalOpen(false)}
         portfolios={goals.map(goal => ({
-          id: goal.id,
+          id: goal.portfolioId || goal.id, // Use portfolioId if available, fallback to id
           name: goal.name,
           portfolioType: goal.portfolioType,
           currentAmount: goal.currentAmount,
@@ -723,7 +775,7 @@ I have access to your portfolio data and can analyze any financial documents you
         isOpen={isPortfolioAnalysisModalOpen}
         onClose={handlePortfolioAnalysisComplete}
         portfolio={goals.length > 0 ? {
-          id: goals[0].id,
+          id: goals[0].portfolioId || goals[0].id, // Use portfolioId if available, fallback to id
           name: goals[0].name,
           portfolioType: goals[0].portfolioType,
           currentAmount: goals[0].currentAmount,
@@ -737,7 +789,7 @@ I have access to your portfolio data and can analyze any financial documents you
         onClose={handleSimulationComplete}
         clientId={userData?.clientId || 'demo-client'}
         portfolios={goals.map(goal => ({
-          id: goal.id,
+          id: goal.portfolioId || goal.id, // Use portfolioId if available, fallback to id
           name: goal.name,
           currentAmount: goal.currentAmount,
           targetAmount: goal.targetAmount,
