@@ -230,7 +230,7 @@ export default function DashboardPage() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Target className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-foreground">GoalifyInvest</span>
+            <span className="text-2xl font-bold text-foreground">Willow</span>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
@@ -290,7 +290,7 @@ export default function DashboardPage() {
                 </Button>
               )}
             </div>
-            <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+            <div className="w-10 h-10 bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
               <span className="text-primary font-semibold">{userData.name.charAt(0).toUpperCase()}</span>
             </div>
           </div>
@@ -301,14 +301,14 @@ export default function DashboardPage() {
         {/* Welcome Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Welcome back, {userData.name.split(" ")[0]}!</h1>
-          <p className="text-muted-foreground text-lg">Track your progress and manage your investment goals</p>
+          <p className="text-muted-foreground text-lg">Manage your finances and watch your resources grow!</p>
         </div>
 
         {/* Stats Overview */}
         <div className="grid md:grid-cols-3 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Invested</CardTitle>
+              <CardTitle className="text-sm font-medium">Resources Invested</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -321,7 +321,7 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Target Value</CardTitle>
+              <CardTitle className="text-sm font-medium">Build Target</CardTitle>
               <Target className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -332,7 +332,7 @@ export default function DashboardPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Overall Progress</CardTitle>
+              <CardTitle className="text-sm font-medium">Build Progress</CardTitle>
               <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -346,7 +346,7 @@ export default function DashboardPage() {
 
         {/* Goals Section */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold">Your Investment Goals</h2>
+          <h2 className="text-2xl font-bold">Your Building Projects 🏗️</h2>
           <div className="flex items-center gap-2">
             <Link href="/ai-advisor">
               <Button 
@@ -381,25 +381,25 @@ export default function DashboardPage() {
               <DollarSign className="h-4 w-4" />
               Fund Goals
             </Button>
-            <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
+              <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
-              Create New Goal
+              Start New Build
             </Button>
           </div>
         </div>
 
         {goals.length === 0 ? (
-          <Card className="text-center py-12">
+            <Card className="text-center py-12">
             <CardContent>
               <Target className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No Goals Yet</h3>
+              <h3 className="text-xl font-semibold mb-2">No Builds Started Yet! 🏗️</h3>
               <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                Start your investing journey by creating your first goal. Whether it's a trip, gadget, or car - we'll
-                help you get there.
+                Ready to start crafting your financial future? Whether it's an epic trip, awesome gear, or your first car - 
+                let's build it block by block!
               </p>
               <Button onClick={() => setIsCreateModalOpen(true)} className="gap-2">
                 <Plus className="h-4 w-4" />
-                Create Your First Goal
+                Start Your First Build
               </Button>
             </CardContent>
           </Card>
@@ -417,7 +417,7 @@ export default function DashboardPage() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center text-primary">
+                        <div className="w-10 h-10 bg-primary/10 border-2 border-primary/20 flex items-center justify-center text-primary">
                           {getGoalIcon(goal.icon)}
                         </div>
                         <div>

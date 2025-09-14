@@ -1,15 +1,15 @@
-# GoalifyInvest
+# Willow
 
 A web application that demystifies investing for students by anchoring it to their real-life aspirations.
 
 ## Overview
 
-GoalifyInvest transforms abstract financial portfolios into tangible, visual goals. Built for post-secondary students who have some disposable income but feel intimidated by investing, our platform makes the process intuitive, motivating, and directly tied to their life milestones.
+Willow transforms abstract financial portfolios into tangible, visual goals. Built for post-secondary students who have some disposable income but feel intimidated by investing, our platform makes the process intuitive, motivating, and directly tied to their life milestones.
 
 ## Team Registration
 
 ✅ **Team Successfully Registered**
-- **Team Name**: Chronicle
+- **Team Name**: Willow
 - **Team ID**: `b93dff86-af54-4f74-9150-904e4cb7f134`
 - **JWT Token**: Configured and ready to use
 - **Token Expires**: September 23, 2025

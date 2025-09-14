@@ -53,10 +53,20 @@ const config = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      fontFamily: {
+        'minecraft': ['Orbitron', 'monospace'],
+        'sans': ['Orbitron', 'ui-sans-serif', 'system-ui'],
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        none: "0px", // Ensure we have explicit no-radius option
+      },
+      boxShadow: {
+        'minecraft': '4px 4px 0px 0px rgba(0, 0, 0, 0.3)',
+        'minecraft-hover': '5px 5px 0px 0px rgba(0, 0, 0, 0.4)',
+        'minecraft-pressed': '2px 2px 0px 0px rgba(0, 0, 0, 0.3)',
       },
       keyframes: {
         "accordion-down": {
@@ -67,10 +77,15 @@ const config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "minecraft-bounce": {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-2px)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "minecraft-bounce": "minecraft-bounce 0.3s ease-in-out infinite",
       },
     },
   },

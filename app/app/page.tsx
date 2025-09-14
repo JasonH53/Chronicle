@@ -12,7 +12,7 @@ export default function LandingPage() {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Target className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-foreground">GoalifyInvest</span>
+            <span className="text-2xl font-bold text-foreground">Willow</span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -32,23 +32,23 @@ export default function LandingPage() {
       <section className="py-20 px-4">
         <div className="container mx-auto text-center max-w-4xl">
           <Badge variant="secondary" className="mb-6 text-sm px-4 py-2">
-            Built for Students
+            Build Your Future!
           </Badge>
           <h1 className="text-5xl md:text-6xl font-bold text-balance mb-6 leading-tight">
-            Invest in Your <span className="text-primary">Dreams</span>, Not Just Numbers
+            Build Your <span className="text-primary">Dreams</span>, Block by Block!
           </h1>
           <p className="text-xl text-muted-foreground text-balance mb-8 max-w-2xl mx-auto leading-relaxed">
-            Transform abstract investing into tangible goals. Whether it's your dream trip to Spain, a new laptop, or
-            your first car - make every investment count towards your real-life aspirations.
+            Just like in Minecraft, build your financial future one block at a time! Set goals for that epic trip to Spain, 
+            a new gaming setup, or your first car - and watch your investments grow like your favorite builds.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <Link href="/create-account">
               <Button size="lg" className="text-lg px-8 py-6 group">
-                Get Started
+                GET STARTED!
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <p className="text-sm text-muted-foreground">No fees to start • Built for students</p>
+            <p className="text-sm text-muted-foreground">No fees to start • Craft your financial future</p>
           </div>
         </div>
       </section>
@@ -57,15 +57,15 @@ export default function LandingPage() {
       <section id="goals" className="py-16 px-4 bg-muted/30">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Popular Student Goals</h2>
+            <h2 className="text-3xl font-bold mb-4">Popular Building Projects 🏗️</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              See how other students are investing towards their dreams
+              See what other players are building towards with their investments
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-primary/10 border-4 border-primary/20 flex items-center justify-center mx-auto mb-4">
                   <Plane className="h-8 w-8 text-primary" />
                 </div>
                 <CardTitle className="text-xl">Europe Trip</CardTitle>
@@ -86,7 +86,7 @@ export default function LandingPage() {
 
             <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-primary/10 border-4 border-primary/20 flex items-center justify-center mx-auto mb-4">
                   <Smartphone className="h-8 w-8 text-primary" />
                 </div>
                 <CardTitle className="text-xl">New MacBook</CardTitle>
@@ -107,7 +107,7 @@ export default function LandingPage() {
 
             <Card className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
               <CardHeader className="text-center pb-4">
-                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <div className="w-16 h-16 bg-primary/10 border-4 border-primary/20 flex items-center justify-center mx-auto mb-4">
                   <Car className="h-8 w-8 text-primary" />
                 </div>
                 <CardTitle className="text-xl">First Car</CardTitle>
@@ -133,9 +133,9 @@ export default function LandingPage() {
       <section id="features" className="py-16 px-4">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Why Students Choose GoalifyInvest</h2>
+            <h2 className="text-3xl font-bold mb-4">Why Crafters Choose Willow 🎯</h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              We make investing simple, visual, and connected to what matters most to you
+              We make investing as fun and visual as your favorite block-building game!
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
@@ -143,30 +143,30 @@ export default function LandingPage() {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Target className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-4">Goal-Based Investing</h3>
+              <h3 className="text-xl font-semibold mb-4">Blueprint-Based Building 📐</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Connect every dollar to a real goal. No more abstract portfolios - invest in your trip to Spain, not
-                just a "balanced fund."
+                Every investment is a block in your dream build! No confusing portfolios - just clear goals like 
+                that epic Europe adventure or dream gaming setup.
               </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <GraduationCap className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-4">Student-Friendly</h3>
+              <h3 className="text-xl font-semibold mb-4">Player-Friendly 🎮</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Built specifically for post-secondary students. Low minimums, educational resources, and goals that
-                match your lifestyle.
+                Built for the next generation! Start small like placing your first block, learn as you build, 
+                and set goals that actually matter to you.
               </p>
             </div>
             <div className="text-center">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <TrendingUp className="h-8 w-8 text-primary" />
               </div>
-              <h3 className="text-xl font-semibold mb-4">Smart Growth</h3>
+              <h3 className="text-xl font-semibold mb-4">Resource Multiplying ⚡</h3>
               <p className="text-muted-foreground leading-relaxed">
-                Choose from conservative to aggressive portfolios based on your timeline. Watch your money grow towards
-                your dreams.
+                Pick your strategy from cautious mining to bold exploration! Watch your resources multiply 
+                and your builds come to life.
               </p>
             </div>
           </div>
@@ -182,21 +182,21 @@ export default function LandingPage() {
           </div>
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div className="text-center">
-              <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+              <div className="w-12 h-12 bg-primary text-primary-foreground border-4 border-primary-foreground/20 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                 1
               </div>
               <h3 className="text-lg font-semibold mb-2">Set Your Goal</h3>
               <p className="text-muted-foreground">Tell us what you're saving for and when you need it</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+              <div className="w-12 h-12 bg-primary text-primary-foreground border-4 border-primary-foreground/20 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                 2
               </div>
               <h3 className="text-lg font-semibold mb-2">Choose Your Strategy</h3>
               <p className="text-muted-foreground">Pick a portfolio that matches your timeline and risk comfort</p>
             </div>
             <div className="text-center">
-              <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center mx-auto mb-4 text-xl font-bold">
+              <div className="w-12 h-12 bg-primary text-primary-foreground border-4 border-primary-foreground/20 flex items-center justify-center mx-auto mb-4 text-xl font-bold">
                 3
               </div>
               <h3 className="text-lg font-semibold mb-2">Watch It Grow</h3>
@@ -228,12 +228,12 @@ export default function LandingPage() {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center gap-2 mb-4 md:mb-0">
               <Target className="h-6 w-6 text-primary" />
-              <span className="text-lg font-semibold">GoalifyInvest</span>
+              <span className="text-lg font-semibold">Willow</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
-              <span>Built for students, by students</span>
+              <span>Built by crafters, for crafters</span>
               <span>•</span>
-              <span>Start investing today</span>
+              <span>Start building today</span>
             </div>
           </div>
         </div>

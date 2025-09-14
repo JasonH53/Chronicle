@@ -1,4 +1,4 @@
-// Configuration file for GoalifyInvest
+// Configuration file for Willow
 module.exports = {
   // Team Registration Credentials
   teamId: '9cf0f5bf-0cb5-42dc-bded-568322a95a89',
