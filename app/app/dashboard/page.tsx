@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { Target, Plus, TrendingUp, Calendar, DollarSign, Plane, Smartphone, Car, GraduationCap, BarChart3, History } from "lucide-react"
+import { Target, Plus, TrendingUp, Calendar, DollarSign, Plane, Smartphone, Car, GraduationCap, BarChart3, History, PieChart } from "lucide-react"
 import { CreateGoalModal } from "@/components/create-goal-modal"
 import { SimulationModal } from "@/components/simulation-modal"
+import { PortfolioAnalysisModal } from "@/components/portfolio-analysis-modal"
 import { TransactionHistory } from "@/components/transaction-history"
 import FundingModal from "@/components/funding-modal"
 
@@ -35,6 +36,8 @@ export default function DashboardPage() {
   const [goals, setGoals] = useState<Goal[]>([])
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isSimulationModalOpen, setIsSimulationModalOpen] = useState(false)
+  const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false)
+  const [selectedPortfolio, setSelectedPortfolio] = useState<any>(null)
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false)
   const [isFundingModalOpen, setIsFundingModalOpen] = useState(false)
   const [currentBalance, setCurrentBalance] = useState(0)
@@ -419,6 +422,27 @@ export default function DashboardPage() {
                       </div>
                       <span className="text-muted-foreground">{new Date(goal.targetDate).toLocaleDateString()}</span>
                     </div>
+
+                    <div className="pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full gap-2"
+                        onClick={() => {
+                          setSelectedPortfolio({
+                            id: goal.portfolioId || goal.id,
+                            name: goal.name,
+                            currentAmount: goal.currentAmount,
+                            targetAmount: goal.targetAmount,
+                            portfolioType: goal.portfolioType
+                          })
+                          setIsAnalysisModalOpen(true)
+                        }}
+                      >
+                        <PieChart className="h-4 w-4" />
+                        Analyze Portfolio
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )
@@ -481,6 +505,16 @@ export default function DashboardPage() {
             setGoals(JSON.parse(storedGoals))
           }
         }}
+      />
+
+      {/* Portfolio Analysis Modal */}
+      <PortfolioAnalysisModal
+        isOpen={isAnalysisModalOpen}
+        onClose={() => {
+          setIsAnalysisModalOpen(false)
+          setSelectedPortfolio(null)
+        }}
+        portfolio={selectedPortfolio}
       />
     </div>
   )
