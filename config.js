@@ -4,6 +4,8 @@ module.exports = {
   teamId: '9cf0f5bf-0cb5-42dc-bded-568322a95a89',
   jwtToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0ZWFtSWQiOiI5Y2YwZjViZi0wY2I1LTQyZGMtYmRlZC01NjgzMjJhOTVhODkiLCJ0ZWFtX25hbWUiOiJDaHJvbmljbGUtRGV2IiwiY29udGFjdF9lbWFpbCI6ImNwamFzb24xMjM0QGdtYWlsLmNvbSIsImV4cCI6MTc1ODY2MzAwNS4wMjczNDh9.Rx2nYReJIRy0ME8ZeydCjCjZ8B2EFp54dV5x3yRdCng',
   
+  CEREBRAS_API_KEY: 'csk-t6mj8cnk92krjf2dvhcv4dpv365xkr9hmcdxtrp4vv6ftry4',
+
   // API Configuration
   rbcApiBaseUrl: 'https://2dcq63co40.execute-api.us-east-1.amazonaws.com/dev',
   

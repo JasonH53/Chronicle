@@ -792,32 +792,45 @@ export function SimulationModal({ isOpen, onClose, clientId, portfolios }: Simul
                             </div>
 
                             {/* Growth Chart */}
-                            {simulation.growthTrend.length > 0 && (
-                              <div className="h-32">
-                                <ResponsiveContainer width="100%" height="100%">
-                                  <LineChart data={simulation.growthTrend}>
-                                    <CartesianGrid strokeDasharray="3 3" />
-                                    <XAxis 
-                                      dataKey="date" 
-                                      tickFormatter={formatDate}
-                                      tick={{ fontSize: 12 }}
-                                    />
-                                    <YAxis tick={{ fontSize: 12 }} />
-                                    <Tooltip 
-                                      formatter={(value: number) => [formatCurrency(value), 'Value']}
-                                      labelFormatter={(label) => formatDate(label)}
-                                    />
-                                    <Line 
-                                      type="monotone" 
-                                      dataKey="value" 
-                                      stroke="#0d9488" 
-                                      strokeWidth={2}
-                                      dot={false}
-                                    />
-                                  </LineChart>
-                                </ResponsiveContainer>
-                              </div>
-                            )}
+                            {simulation.growthTrend.length > 0 && (() => {
+                              // Calculate min and max for better scaling
+                              const values = simulation.growthTrend.map(item => item.value);
+                              const minValue = Math.min(...values);
+                              const maxValue = Math.max(...values);
+                              const padding = (maxValue - minValue) * 0.05; // Small padding to show changes better
+                              
+                              return (
+                                <div className="h-32">
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={simulation.growthTrend}>
+                                      <CartesianGrid strokeDasharray="3 3" />
+                                      <XAxis 
+                                        dataKey="date" 
+                                        tickFormatter={formatDate}
+                                        tick={{ fontSize: 12 }}
+                                      />
+                                      <YAxis 
+                                        domain={[minValue - padding, maxValue + padding]}
+                                        tick={{ fontSize: 12 }}
+                                        tickFormatter={(value) => `$${(value / 1000).toFixed(1)}K`}
+                                      />
+                                      <Tooltip 
+                                        formatter={(value: number) => [formatCurrency(value), 'Value']}
+                                        labelFormatter={(label) => formatDate(label)}
+                                      />
+                                      <Line 
+                                        type="monotone" 
+                                        dataKey="value" 
+                                        stroke="#0d9488" 
+                                        strokeWidth={3}
+                                        dot={{ fill: '#0d9488', r: 3 }}
+                                        activeDot={{ r: 5, fill: '#0d9488' }}
+                                      />
+                                    </LineChart>
+                                  </ResponsiveContainer>
+                                </div>
+                              );
+                            })()}
                           </CardContent>
                         </Card>
                       )
